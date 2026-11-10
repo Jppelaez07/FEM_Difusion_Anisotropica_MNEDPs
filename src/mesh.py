@@ -1,10 +1,10 @@
 """Mallas triangulares P1.
 
-Cada malla se describe con:
-  nodes          (Mtot, 2)  coordenadas de los nodos
-  elements       (E, 3)     conectividad g(e, m), vértices en sentido antihorario
-  boundary_nodes            índices de los nodos de frontera
-  interior_nodes            índices de los nodos interiores
+Todas las funciones de malla devuelven:
+  nodes           (Mtot, 2) coordenadas
+  elements        (E, 3) conectividad, vértices en sentido antihorario
+  boundary_nodes  índices de los nodos de frontera
+  interior_nodes  índices de los nodos interiores
 """
 
 import gmsh
@@ -12,14 +12,11 @@ import numpy as np
 
 
 def make_mesh(Lx, Ly, h_global, h_source, xs, ys, r_ref, transicion=None):
-    """Malla no estructurada de [0, Lx] x [0, Ly] con refinamiento en la fuente.
+    """Malla no estructurada de [0, Lx] x [0, Ly] refinada alrededor de la fuente.
 
-    El tamaño de elemento es h_source a distancia <= r_ref de (xs, ys) y crece
-    linealmente hasta h_global a distancia r_ref + transicion (por defecto
-    transicion = r_ref). Se usa un Field Distance + Threshold de gmsh.
+    Tamaño h_source hasta una distancia r_ref de (xs, ys); luego crece
+    linealmente hasta h_global en r_ref + transicion (por defecto transicion = r_ref).
     """
-    if Lx <= 0 or Ly <= 0:
-        raise ValueError("Las dimensiones deben ser positivas")
     if not 0 < h_source <= h_global:
         raise ValueError("Se requiere 0 < h_source <= h_global")
     if not (0 < xs < Lx and 0 < ys < Ly):
@@ -28,6 +25,23 @@ def make_mesh(Lx, Ly, h_global, h_source, xs, ys, r_ref, transicion=None):
         raise ValueError("r_ref debe ser positivo")
     if transicion is None:
         transicion = r_ref
+    return _mallar_rectangulo(Lx, Ly, h_global, (h_source, xs, ys, r_ref, transicion))
+
+
+def malla_uniforme(Lx, Ly, h):
+    """Malla no estructurada de [0, Lx] x [0, Ly] con tamaño h en todo el dominio."""
+    if h <= 0:
+        raise ValueError("h debe ser positivo")
+    return _mallar_rectangulo(Lx, Ly, h, None)
+
+
+def _mallar_rectangulo(Lx, Ly, h_global, refinamiento):
+    """Malla el rectángulo con gmsh.
+
+    refinamiento: None (tamaño uniforme) o (h_source, xs, ys, r_ref, transicion).
+    """
+    if Lx <= 0 or Ly <= 0:
+        raise ValueError("Las dimensiones deben ser positivas")
 
     gmsh.initialize()
     try:
@@ -35,47 +49,53 @@ def make_mesh(Lx, Ly, h_global, h_source, xs, ys, r_ref, transicion=None):
         gmsh.model.add("dominio")
         geo = gmsh.model.geo
 
-        # Rectángulo: esquinas en sentido antihorario
+        # Rectángulo
         esquinas = [geo.addPoint(x, y, 0.0, h_global)
                     for x, y in [(0, 0), (Lx, 0), (Lx, Ly), (0, Ly)]]
         lados = [geo.addLine(esquinas[k], esquinas[(k + 1) % 4]) for k in range(4)]
         contorno = geo.addCurveLoop(lados)
         superficie = geo.addPlaneSurface([contorno])
 
-        # Punto de la fuente: solo sirve de referencia para el campo de distancia
-        punto_fuente = geo.addPoint(xs, ys, 0.0, h_source)
+        if refinamiento is not None:
+            h_source, xs, ys, r_ref, transicion = refinamiento
+            punto_fuente = geo.addPoint(xs, ys, 0.0, h_source)   # referencia del refinamiento
         geo.synchronize()
 
         grupo_frontera = gmsh.model.addPhysicalGroup(1, lados, name="frontera")
         gmsh.model.addPhysicalGroup(2, [superficie], name="dominio")
 
-        # Tamaño de elemento: h_source cerca de la fuente, h_global lejos
-        distancia = gmsh.model.mesh.field.add("Distance")
-        gmsh.model.mesh.field.setNumbers(distancia, "PointsList", [punto_fuente])
-        umbral = gmsh.model.mesh.field.add("Threshold")
-        gmsh.model.mesh.field.setNumber(umbral, "InField", distancia)
-        gmsh.model.mesh.field.setNumber(umbral, "SizeMin", h_source)
-        gmsh.model.mesh.field.setNumber(umbral, "SizeMax", h_global)
-        gmsh.model.mesh.field.setNumber(umbral, "DistMin", r_ref)
-        gmsh.model.mesh.field.setNumber(umbral, "DistMax", r_ref + transicion)
-        gmsh.model.mesh.field.setAsBackgroundMesh(umbral)
+        campo = gmsh.model.mesh.field
+        if refinamiento is None:
+            tamano = campo.add("MathEval")
+            campo.setString(tamano, "F", repr(float(h_global)))
+        else:
+            # Campo de distancia + umbral
+            distancia = campo.add("Distance")
+            campo.setNumbers(distancia, "PointsList", [punto_fuente])
+            tamano = campo.add("Threshold")
+            campo.setNumber(tamano, "InField", distancia)
+            campo.setNumber(tamano, "SizeMin", h_source)
+            campo.setNumber(tamano, "SizeMax", h_global)
+            campo.setNumber(tamano, "DistMin", r_ref)
+            campo.setNumber(tamano, "DistMax", r_ref + transicion)
+        campo.setAsBackgroundMesh(tamano)
 
-        # Que el tamaño lo controle solo el campo
+        # El tamaño lo controla solo el campo
         gmsh.option.setNumber("Mesh.MeshSizeExtendFromBoundary", 0)
         gmsh.option.setNumber("Mesh.MeshSizeFromPoints", 0)
         gmsh.option.setNumber("Mesh.MeshSizeFromCurvature", 0)
         gmsh.option.setNumber("Mesh.Algorithm", 6)     # Frontal-Delaunay
-        gmsh.option.setNumber("Mesh.ElementOrder", 1)  # P1
+        gmsh.option.setNumber("Mesh.ElementOrder", 1)
 
         gmsh.model.mesh.generate(2)
 
         etiquetas, coords, _ = gmsh.model.mesh.getNodes()
-        _, nodos_tri = gmsh.model.mesh.getElementsByType(2)   # tipo 2 = triángulo de 3 nodos
+        _, nodos_tri = gmsh.model.mesh.getElementsByType(2)   # triángulos de 3 nodos
         etiquetas_frontera, _ = gmsh.model.mesh.getNodesForPhysicalGroup(1, grupo_frontera)
     finally:
         gmsh.finalize()
 
-    # Pasar de etiquetas de gmsh a índices 0..Mtot-1
+    # Etiquetas de gmsh -> índices 0..Mtot-1
     etiquetas = np.asarray(etiquetas, dtype=np.int64)
     coords = np.asarray(coords).reshape(-1, 3)[:, :2]
     indice = np.full(etiquetas.max() + 1, -1, dtype=np.int64)
@@ -84,7 +104,7 @@ def make_mesh(Lx, Ly, h_global, h_source, xs, ys, r_ref, transicion=None):
     es_frontera = np.zeros(etiquetas.size, dtype=bool)
     es_frontera[indice[np.asarray(etiquetas_frontera, dtype=np.int64)]] = True
 
-    # Eliminar nodos que no pertenecen a ningún triángulo (p. ej. el de la fuente)
+    # Quitar nodos que no están en ningún triángulo y renumerar
     usados = np.unique(elements)
     nuevo = np.full(etiquetas.size, -1, dtype=np.int64)
     nuevo[usados] = np.arange(usados.size)
@@ -101,8 +121,7 @@ def make_mesh(Lx, Ly, h_global, h_source, xs, ys, r_ref, transicion=None):
 def malla_estructurada(Lx, Ly, Nx, Ny):
     """Malla estructurada de [0, Lx] x [0, Ly] con Nx x Ny nodos.
 
-    Los nodos se numeran por filas (primero x, luego y) y cada rectángulo
-    se divide en dos triángulos antihorarios: [n0, n1, n2] y [n1, n3, n2].
+    Cada rectángulo se divide en dos triángulos.
     """
     if Lx <= 0 or Ly <= 0:
         raise ValueError("Las dimensiones deben ser positivas")
@@ -125,7 +144,7 @@ def malla_estructurada(Lx, Ly, Nx, Ny):
     elements[0::2] = np.column_stack((n0, n1, n2))
     elements[1::2] = np.column_stack((n1, n3, n2))
 
-    # Frontera: primera y última fila y columna de la grilla
+    # Frontera: primera y última fila y columna
     ids = np.arange(Nx * Ny).reshape(Ny, Nx)
     frontera = np.zeros(Nx * Ny, dtype=bool)
     frontera[ids[0, :]] = frontera[ids[-1, :]] = True
@@ -135,18 +154,14 @@ def malla_estructurada(Lx, Ly, Nx, Ny):
 
 
 def determinantes(nodes, elements):
-    """|J| de cada elemento: positivo si sus vértices están en sentido antihorario."""
+    """|J| de cada elemento (positivo si es antihorario)."""
     p0, p1, p2 = (nodes[elements[:, m]] for m in range(3))
     return ((p1[:, 0] - p0[:, 0]) * (p2[:, 1] - p0[:, 1])
             - (p2[:, 0] - p0[:, 0]) * (p1[:, 1] - p0[:, 1]))
 
 
 def orientar_antihorario(nodes, elements, tol=1e-14):
-    """Intercambia los vértices 1 y 2 de los elementos con |J| < 0.
-
-    Lanza error si hay triángulos degenerados (|J| ≈ 0).
-    Retorna (elements, número de elementos reorientados).
-    """
+    """Reorienta los elementos con |J| < 0. Retorna (elements, número reorientado)."""
     elements = np.array(elements, dtype=np.int64, copy=True)
     detJ = determinantes(nodes, elements)
 
@@ -159,18 +174,15 @@ def orientar_antihorario(nodes, elements, tol=1e-14):
 
 
 def calidad_malla(nodes, elements):
-    """Indicadores de calidad de la malla.
+    """Número de nodos y elementos, h mínimo, medio y máximo, y ángulo mínimo (grados).
 
-    h de un elemento = longitud de su lado más largo.
-    Retorna un diccionario con n_nodos, n_elementos, h_min, h_max y
-    angulo_min (en grados, mínimo sobre todos los ángulos de todos los triángulos).
+    h de un elemento = su lado más largo.
     """
-    p = nodes[elements]                                   # (E, 3, 2)
-    a = p[:, [1, 2, 0]] - p                               # lado del vértice m al m+1
-    b = p[:, [2, 0, 1]] - p                               # lado del vértice m al m+2
+    p = nodes[elements]                     # (E, 3, 2)
+    a = p[:, [1, 2, 0]] - p                 # lado del vértice m al m+1
+    b = p[:, [2, 0, 1]] - p                 # lado del vértice m al m+2
     h = np.linalg.norm(a, axis=2).max(axis=1)
 
-    # Ángulo en cada vértice m, entre los dos lados que salen de él
     cos = np.einsum("emi,emi->em", a, b) / (np.linalg.norm(a, axis=2) * np.linalg.norm(b, axis=2))
     angulos = np.degrees(np.arccos(np.clip(cos, -1.0, 1.0)))
 
@@ -178,6 +190,7 @@ def calidad_malla(nodes, elements):
         "n_nodos": len(nodes),
         "n_elementos": len(elements),
         "h_min": float(h.min()),
+        "h_medio": float(h.mean()),
         "h_max": float(h.max()),
         "angulo_min": float(angulos.min()),
     }

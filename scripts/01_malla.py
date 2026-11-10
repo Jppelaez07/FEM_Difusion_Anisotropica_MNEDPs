@@ -1,9 +1,6 @@
-"""Malla no estructurada con refinamiento en la fuente y verificaciones básicas.
+"""Genera la malla con gmsh, reporta su calidad y verifica M y K.
 
-Genera la malla con gmsh, reporta su calidad, ensambla M y K y verifica:
-  - área total: Σ|J|/2 = 1ᵀ M 1 = Lx·Ly
-  - simetría de M y K
-  - K·1 ≈ 0 (el gradiente de una constante es cero)
+Verificaciones: área total, simetría de M y K, K * 1 = 0 y nodos de frontera.
 Guarda results/malla.png y results/01_malla.txt.
 """
 
@@ -65,7 +62,7 @@ def main():
     sim_K = abs(K - K.T).max()
     K1 = np.abs(K @ unos).max()
 
-    # Nodos de frontera: deben estar sobre el borde del rectángulo
+    # Distancia de los nodos al borde del rectángulo
     x_b, y_b = nodes[bnd, 0], nodes[bnd, 1]
     en_borde = np.minimum.reduce([x_b, Lx - x_b, y_b, Ly - y_b])
     x_i, y_i = nodes[inte, 0], nodes[inte, 1]
@@ -73,11 +70,11 @@ def main():
 
     verificaciones = [
         ("min |J| > 0", detJ.min(), detJ.min() > 0),
-        ("|Σ|J|/2 - Lx·Ly|", abs(area_J - Lx * Ly), abs(area_J - Lx * Ly) <= TOL * Lx * Ly),
-        ("|1ᵀM1 - Lx·Ly|", abs(area_M - Lx * Ly), abs(area_M - Lx * Ly) <= TOL * Lx * Ly),
-        ("max|M - Mᵀ|", sim_M, sim_M <= TOL),
-        ("max|K - Kᵀ|", sim_K, sim_K <= TOL),
-        ("max|K·1|", K1, K1 <= TOL),
+        ("|suma |J|/2 - Lx*Ly|", abs(area_J - Lx * Ly), abs(area_J - Lx * Ly) <= TOL * Lx * Ly),
+        ("|1^T M 1 - Lx*Ly|", abs(area_M - Lx * Ly), abs(area_M - Lx * Ly) <= TOL * Lx * Ly),
+        ("max|M - M^T|", sim_M, sim_M <= TOL),
+        ("max|K - K^T|", sim_K, sim_K <= TOL),
+        ("max|K * 1|", K1, K1 <= TOL),
         ("max dist. borde (frontera)", en_borde.max(), en_borde.max() <= 1e-12),
         ("min dist. borde (interiores)", dist_borde_int.min(), dist_borde_int.min() > 1e-12),
     ]

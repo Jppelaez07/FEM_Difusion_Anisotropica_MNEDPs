@@ -1,8 +1,6 @@
-"""Integración temporal con el método θ (sección IV de la formulación).
+"""Integración temporal con el método theta.
 
-(M + θΔt K) N^{k+1} = (M − (1−θ)Δt K) N^k + Δt (θ F^{k+1} + (1−θ) F^k)
-
-La matriz A = M + θΔt K se factoriza una sola vez (LU dispersa, splu).
+(M + theta dt K) N_{k+1} = (M - (1-theta) dt K) N_k + dt (theta F_{k+1} + (1-theta) F_k)
 """
 
 import numpy as np
@@ -12,7 +10,7 @@ from . import assembly
 
 
 def _pasos_guardados(t_guardar, T, dt, Nt):
-    """Índices de paso k (t_k = kΔt) más cercanos a los instantes pedidos."""
+    """Pasos k más cercanos a los instantes pedidos."""
     if t_guardar is None:
         return {0, Nt}
     t_guardar = np.atleast_1d(np.asarray(t_guardar, dtype=float))
@@ -22,22 +20,14 @@ def _pasos_guardados(t_guardar, T, dt, Nt):
 
 
 def metodo_theta(M, K, N0, T, dt, theta=1.0, F=None, t_guardar=None):
-    """Integra M dN/dt + K N = F(t) con N(0) = N0 en [0, T].
+    """Resuelve M dN/dt + K N = F desde N0 hasta T.
 
-    Parámetros
-    ----------
-    M, K : matrices dispersas del sistema que se resuelve.
-    N0 : vector inicial.
-    T, dt : tiempo final y paso deseado; dt se ajusta a T/Nt para llegar a T.
-    theta : 1 = Euler implícito (caso base), 0.5 = Crank-Nicolson, 0 = explícito.
-    F : None (sin fuente), vector constante, o función F(t) -> vector.
-    t_guardar : instantes a guardar (se redondean al paso más cercano);
-        None = solo t = 0 y t = T.
+    theta: 1 = Euler implícito, 0.5 = Crank-Nicolson, 0 = Euler explícito.
+    dt se ajusta para que T sea un múltiplo exacto.
+    F: None, vector constante o función F(t).
+    t_guardar: instantes a guardar (None = solo 0 y T).
 
-    Retorna
-    -------
-    tiempos : arreglo (S,) de instantes guardados.
-    soluciones : arreglo (S, len(N0)) con N en esos instantes.
+    Retorna (tiempos, soluciones), con soluciones de forma (S, len(N0)).
     """
     if not 0.0 <= theta <= 1.0:
         raise ValueError("theta debe estar en [0, 1]")
@@ -47,13 +37,12 @@ def metodo_theta(M, K, N0, T, dt, theta=1.0, F=None, t_guardar=None):
 
     A = (M + theta * dt * K).tocsc()
     B = (M - (1.0 - theta) * dt * K).tocsr()
-    lu = splu(A)
+    lu = splu(A)                        # se factoriza una sola vez
 
     variable = callable(F)
     if variable:
         F_k = F(0.0)
     else:
-        # Fuente constante: θF + (1−θ)F = F
         F_cte = np.zeros(len(N0)) if F is None else np.asarray(F, dtype=float)
 
     N = np.array(N0, dtype=float, copy=True)
@@ -81,25 +70,17 @@ def metodo_theta(M, K, N0, T, dt, theta=1.0, F=None, t_guardar=None):
 
 def simular(nodes, elements, boundary_nodes, D_func, n0, T, dt, theta=1.0,
             Q=None, bc="dirichlet", t_guardar=None):
-    """Resuelve el problema completo en la malla dada.
+    """Ensambla y resuelve el problema completo en la malla dada.
 
-    Parámetros
-    ----------
-    nodes, elements, boundary_nodes : malla (ver mesh.py).
-    D_func : D(x, y) -> (P, 2, 2), p. ej. fields.funcion_tensor(B, D∥, D⊥).
-    n0 : condición inicial n0(x, y).
-    Q : fuente Q(x, y, t), o None si no hay fuente.
-    bc : "dirichlet" (n = 0 en ∂Ω; se resuelve el bloque de nodos interiores)
-         o "neumann" (flujo nulo; se usan las matrices completas).
-    T, dt, theta, t_guardar : ver metodo_theta.
+    D_func: D(x, y), p. ej. fields.funcion_tensor(B, D_par, D_perp).
+    n0: condición inicial n0(x, y).  Q: fuente Q(x, y, t) o None.
+    bc: "dirichlet" (n = 0 en la frontera) o "neumann" (flujo nulo).
 
-    Retorna
-    -------
-    dict con
-      t : instantes guardados (S,)
-      N : solución nodal global (S, Mtot); con Dirichlet vale 0 en la frontera
-      M, K : matrices globales completas (útiles para el postproceso)
-      libres : índices de los nodos donde se resolvió
+    Retorna un dict con:
+      t       instantes guardados
+      N       solución en todos los nodos (S, Mtot); 0 en la frontera si es Dirichlet
+      M, K    matrices globales completas
+      libres  nodos donde se resolvió
     """
     bc = bc.lower()
     if bc not in ("dirichlet", "neumann"):

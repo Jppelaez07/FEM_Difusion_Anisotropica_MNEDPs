@@ -1,10 +1,7 @@
-"""Prueba rápida del solver: difusión anisotrópica de una gaussiana con Neumann.
+"""Prueba rápida: gaussiana con Neumann, Q = 0 y campo uniforme a 30 grados.
 
-Gaussiana inicial, Q = 0, flujo nulo en la frontera, D∥ = 1, D⊥ = 0.1 y
-campo uniforme a 30°. Se verifica:
-  - conservación de la masa 1ᵀ M N (variación relativa < 1e-10)
-  - elongación de la nube en la dirección de B (ángulo del eje mayor ≈ 30°)
-  - momentos frente a la solución en dominio infinito: Σ(t) = σ0² I + 2 D t
+Verifica que la masa se conserva y que la nube se alarga en la dirección de B.
+Compara los momentos con la solución en dominio infinito.
 Guarda results/02_prueba_rapida.png y results/02_prueba_rapida.txt.
 """
 
@@ -60,22 +57,23 @@ def main():
     angulo = postproc.angulo_principal(mom)
     n_min = postproc.minimo(N)
 
-    # Dominio infinito con D constante: Σ(t) = σ0² I + 2 D t
+    # Momentos en dominio infinito: sigma0^2 I + 2 D t
     D0 = D(np.array([xs]), np.array([ys]))[0]
     teo = {k: sigma0 ** 2 * (i == j) + 2.0 * D0[i, j] * t
            for k, (i, j) in {"xx": (0, 0), "yy": (1, 1), "xy": (0, 1)}.items()}
 
     reportar("PRUEBA RÁPIDA: gaussiana, Q = 0, Neumann, campo uniforme")
     reportar(f"  Malla: {len(nodes)} nodos, {len(elements)} triángulos")
-    reportar(f"  D∥ = {D_par:g}, D⊥ = {D_perp:g}, α = {alpha_grados:g}°, σ0 = {sigma0:g}")
-    reportar(f"  θ = {theta:g}, Δt = {dt:g}, T = {T:g}")
+    reportar(f"  D_par = {D_par:g}, D_perp = {D_perp:g}, alpha = {alpha_grados:g} grados,"
+             f" sigma0 = {sigma0:g}")
+    reportar(f"  theta = {theta:g}, dt = {dt:g}, T = {T:g}")
     reportar()
-    reportar(f"  {'t':>5s} {'masa':>14s} {'⟨x²⟩':>8s} {'teo':>7s} {'⟨y²⟩':>8s} {'teo':>7s}"
-             f" {'⟨xy⟩':>8s} {'teo':>7s} {'ángulo':>8s} {'min n':>11s}")
+    reportar(f"  {'t':>5s} {'masa':>14s} {'<x^2>':>8s} {'teo':>7s} {'<y^2>':>8s} {'teo':>7s}"
+             f" {'<xy>':>8s} {'teo':>7s} {'angulo':>8s} {'min n':>11s}")
     for k in np.flatnonzero(np.isin(np.round(t, 10), [0.0, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0])):
         reportar(f"  {t[k]:5.2f} {masa[k]:14.10f} {mom['xx'][k]:8.4f} {teo['xx'][k]:7.4f}"
                  f" {mom['yy'][k]:8.4f} {teo['yy'][k]:7.4f} {mom['xy'][k]:8.4f} {teo['xy'][k]:7.4f}"
-                 f" {(f'{angulo[k]:7.2f}°' if k > 0 else '       —')} {n_min[k]:11.3e}")
+                 f" {(f'{angulo[k]:8.2f}' if k > 0 else '       -')} {n_min[k]:11.3e}")
     reportar()
 
     ok_masa = var_masa.max() < TOL_MASA
@@ -83,34 +81,34 @@ def main():
     reportar("VERIFICACIONES")
     reportar(f"  Variación relativa máx. de la masa: {var_masa.max():.3e}"
              f"  (< {TOL_MASA:.0e}: {'OK' if ok_masa else 'FALLA'})")
-    reportar(f"  Ángulo del eje mayor en t = {T:g}:  {angulo[-1]:.2f}°"
-             f"  (esperado {alpha_grados:g}°: {'OK' if ok_ang else 'FALLA'})")
+    reportar(f"  Ángulo del eje mayor en t = {T:g}:  {angulo[-1]:.2f} grados"
+             f"  (esperado {alpha_grados:g}: {'OK' if ok_ang else 'FALLA'})")
     err_mom = max(abs(mom[c][-1] - teo[c][-1]) / teo["xx"][-1] for c in ("xx", "yy", "xy"))
     reportar(f"  Error relativo de los momentos en t = {T:g} frente a dominio infinito: {err_mom:.2e}")
     reportar(f"  Mínimo de n en toda la simulación: {n_min.min():.3e}")
     reportar()
     reportar("RESULTADO: " + ("OK" if ok_masa and ok_ang else "HAY FALLAS"))
 
-    # --- Figura: 4 instantes ---
+    # Figura: 4 instantes
     fig, axes = plt.subplots(2, 2, figsize=(10, 9.4), constrained_layout=True)
     largo = 9.0
     dx, dy = largo * np.cos(alpha), largo * np.sin(alpha)
     for ax, tf in zip(axes.ravel(), t_figura):
         k = int(np.argmin(np.abs(t - tf)))
-        niveles = np.linspace(0.0, N[k].max(), 31)     # valores < 0 (≈ -5e-5) van al color mínimo
+        niveles = np.linspace(0.0, N[k].max(), 31)     # los valores negativos van al color mínimo
         cf = ax.tricontourf(nodes[:, 0], nodes[:, 1], elements, N[k], levels=niveles,
                             cmap="Blues", extend="min")
         fig.colorbar(cf, ax=ax, shrink=0.85, label="n (adimensional)", format="%.2f")
         ax.plot([xs - dx, xs + dx], [ys - dy, ys + dy], color="#c2410c", linestyle="--",
                 linewidth=1.2, label=f"Dirección de B ({alpha_grados:g}°)")
-        # Elipse de 2 desviaciones estándar a partir de los momentos numéricos
+        # Elipse de 2 desviaciones estándar según los momentos
         cov = np.array([[mom["xx"][k], mom["xy"][k]], [mom["xy"][k], mom["yy"][k]]])
         val, vec = np.linalg.eigh(cov)
         ax.add_patch(Ellipse((mom["xc"][k], mom["yc"][k]), 4 * np.sqrt(val[1]),
                              4 * np.sqrt(val[0]),
                              angle=np.degrees(np.arctan2(vec[1, 1], vec[0, 1])),
                              fill=False, color="#111827", linewidth=1.2,
-                             label="Elipse 2σ (momentos)"))
+                             label=r"Elipse $2\sigma$ (momentos)"))
         ax.set_title(f"t = {t[k]:.1f}   (eje mayor a {angulo[k]:.1f}°)" if k > 0
                      else "t = 0.0   (condición inicial)")
         ax.set_xlim(1, 19)
@@ -119,8 +117,8 @@ def main():
         ax.set_xlabel("x (adimensional)")
         ax.set_ylabel("y (adimensional)")
     axes[0, 0].legend(loc="upper left", fontsize=8, framealpha=0.9)
-    fig.suptitle(f"Difusión anisotrópica con Neumann: D∥ = {D_par:g}, D⊥ = {D_perp:g}, "
-                 f"B uniforme a {alpha_grados:g}°")
+    fig.suptitle(rf"Difusión anisotrópica con Neumann: $D_\parallel$ = {D_par:g}, "
+                 rf"$D_\perp$ = {D_perp:g}, B uniforme a {alpha_grados:g}°")
     fig.savefig(RESULTADOS / "02_prueba_rapida.png", dpi=200)
     plt.close(fig)
 
