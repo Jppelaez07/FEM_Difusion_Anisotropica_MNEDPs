@@ -19,13 +19,14 @@ def _pasos_guardados(t_guardar, T, dt, Nt):
     return set(np.rint(t_guardar / dt).astype(int).tolist())
 
 
-def metodo_theta(M, K, N0, T, dt, theta=1.0, F=None, t_guardar=None):
+def metodo_theta(M, K, N0, T, dt, theta=1.0, F=None, t_guardar=None, al_paso=None):
     """Resuelve M dN/dt + K N = F desde N0 hasta T.
 
     theta: 1 = Euler implícito, 0.5 = Crank-Nicolson, 0 = Euler explícito.
     dt se ajusta para que T sea un múltiplo exacto.
     F: None, vector constante o función F(t).
     t_guardar: instantes a guardar (None = solo 0 y T).
+    al_paso: función opcional al_paso(k, t, N), llamada en t = 0 y después de cada paso.
 
     Retorna (tiempos, soluciones), con soluciones de forma (S, len(N0)).
     """
@@ -50,6 +51,8 @@ def metodo_theta(M, K, N0, T, dt, theta=1.0, F=None, t_guardar=None):
     if 0 in guardar:
         tiempos.append(0.0)
         soluciones.append(N.copy())
+    if al_paso is not None:
+        al_paso(0, 0.0, N)
 
     for k in range(Nt):
         t_sig = (k + 1) * dt
@@ -60,6 +63,8 @@ def metodo_theta(M, K, N0, T, dt, theta=1.0, F=None, t_guardar=None):
         else:
             rhs = B @ N + dt * F_cte
         N = lu.solve(rhs)
+        if al_paso is not None:
+            al_paso(k + 1, t_sig, N)
 
         if k + 1 in guardar:
             tiempos.append(t_sig)
@@ -69,12 +74,13 @@ def metodo_theta(M, K, N0, T, dt, theta=1.0, F=None, t_guardar=None):
 
 
 def simular(nodes, elements, boundary_nodes, D_func, n0, T, dt, theta=1.0,
-            Q=None, bc="dirichlet", t_guardar=None):
+            Q=None, bc="dirichlet", t_guardar=None, al_paso=None):
     """Ensambla y resuelve el problema completo en la malla dada.
 
     D_func: D(x, y), p. ej. fields.funcion_tensor(B, D_par, D_perp).
     n0: condición inicial n0(x, y).  Q: fuente Q(x, y, t) o None.
     bc: "dirichlet" (n = 0 en la frontera) o "neumann" (flujo nulo).
+    al_paso: función opcional al_paso(k, t, N) con N en todos los nodos.
 
     Retorna un dict con:
       t       instantes guardados
@@ -105,7 +111,15 @@ def simular(nodes, elements, boundary_nodes, D_func, n0, T, dt, theta=1.0,
         def F(t):
             return assembly.ensamblar_F(nodes, elements, Q, t, geom=geom)[libres]
 
-    t, N_libres = metodo_theta(M_l, K_l, N0, T, dt, theta=theta, F=F, t_guardar=t_guardar)
+    paso_global = None
+    if al_paso is not None:
+        def paso_global(k, t, N_l):
+            N_g = np.zeros(Mtot)
+            N_g[libres] = N_l
+            al_paso(k, t, N_g)
+
+    t, N_libres = metodo_theta(M_l, K_l, N0, T, dt, theta=theta, F=F, t_guardar=t_guardar,
+                               al_paso=paso_global)
 
     N = np.zeros((len(t), Mtot))
     N[:, libres] = N_libres

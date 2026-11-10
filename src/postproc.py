@@ -97,6 +97,63 @@ def momentos(nodes, M, N):
     }
 
 
+def razon_aspecto(mom):
+    """sqrt(l1 / l2), con l1 >= l2 los valores propios de la matriz de momentos."""
+    xx, yy, xy = (np.asarray(mom[k], dtype=float) for k in ("xx", "yy", "xy"))
+    media = 0.5 * (xx + yy)
+    radio = np.sqrt((0.5 * (xx - yy)) ** 2 + xy ** 2)
+    return np.sqrt((media + radio) / (media - radio))
+
+
+def razon_aspecto_isolinea(nodes, elements, N, nivel, xc, yc, angulo, r_max, n_puntos=2001):
+    """Razón de aspecto de la isolínea n = nivel alrededor de (xc, yc).
+
+    Mide la distancia a la que n baja de nivel en las direcciones +-angulo
+    (a lo largo) y +-(angulo + 90 grados) (a través), y retorna
+    (razón, radio a lo largo, radio a través). Cada radio es el promedio de los dos sentidos.
+    """
+    s = np.linspace(0.0, r_max, n_puntos)
+
+    def radio(ang):
+        xp, yp = xc + s * np.cos(ang), yc + s * np.sin(ang)
+        v = evaluar_en_puntos(nodes, elements, N, xp, yp)
+        abajo = np.flatnonzero(~(v >= nivel))
+        if abajo.size == 0 or abajo[0] == 0:
+            return np.nan
+        k = abajo[0]
+        return s[k - 1] + (v[k - 1] - nivel) / (v[k - 1] - v[k]) * (s[k] - s[k - 1])
+
+    r_par = 0.5 * (radio(angulo) + radio(angulo + np.pi))
+    r_perp = 0.5 * (radio(angulo + np.pi / 2) + radio(angulo - np.pi / 2))
+    return r_par / r_perp, r_par, r_perp
+
+
+def vector_flujo_frontera(nodes, elements, D_func):
+    """Vector g tal que g @ N = flujo saliente -int (D grad n_h) . n_ext sobre la frontera."""
+    _, H, bc = assembly.geometria(nodes, elements)
+    D = D_func(bc[:, 0], bc[:, 1])
+
+    # Aristas de frontera: las que pertenecen a un solo triángulo
+    loc = np.array([[0, 1], [1, 2], [2, 0]])
+    aristas = np.sort(elements[:, loc], axis=2).reshape(-1, 2)
+    _, inv, cuenta = np.unique(aristas, axis=0, return_inverse=True, return_counts=True)
+    frontera = np.flatnonzero(cuenta[inv.ravel()] == 1)
+    e, m = frontera // 3, frontera % 3
+
+    # Normal exterior por la longitud de la arista (triángulos antihorarios)
+    d = nodes[elements[e, (m + 1) % 3]] - nodes[elements[e, m]]
+    normal = np.column_stack((d[:, 1], -d[:, 0]))
+
+    w = -np.einsum("ei,eij,ejm->em", normal, D[e], H[e])        # (aristas, 3)
+    return np.bincount(elements[e].ravel(), weights=w.ravel(), minlength=len(nodes))
+
+
+def tiempo_cuasi_estacionario(t, cambio_relativo, tol=1e-4):
+    """Primer instante con |N_k - N_{k-1}| / |N_k| < tol (NaN si no se alcanza)."""
+    ok = np.flatnonzero(np.asarray(cambio_relativo) < tol)
+    return float(t[ok[0]]) if ok.size else np.nan
+
+
 def angulo_principal(mom):
     """Ángulo del eje mayor de la nube, en grados."""
     return 0.5 * np.degrees(np.arctan2(2.0 * mom["xy"], mom["xx"] - mom["yy"]))
