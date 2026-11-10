@@ -25,7 +25,7 @@ Lx, Ly = 20.0, 20.0
 h_global, h_source, r_ref = 1.0, 0.1, 3.0
 xs, ys = Lx / 2.0, Ly / 2.0
 D_par, D_perp = 1.0, 0.1
-Bx, By = 1.0, 0.0
+alpha = 0.0                     # dirección de B (rad)
 
 TOL = 1e-10
 RESULTADOS = RAIZ / "results"
@@ -54,7 +54,7 @@ def main():
     reportar(f"  Ángulo mínimo:      {q['angulo_min']:.2f}°")
     reportar()
 
-    D = fields.funcion_tensor(fields.campo_uniforme(Bx, By), D_par, D_perp)
+    D = fields.funcion_tensor(fields.campo_uniforme(alpha), D_par, D_perp)
     M, K = assembly.ensamblar_MK(nodes, elements, D)
     detJ = mesh.determinantes(nodes, elements)
     unos = np.ones(len(nodes))

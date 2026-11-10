@@ -5,6 +5,9 @@ Notación de la formulación:
   M(e) = |J|/24 [[2,1,1],[1,2,1],[1,1,2]]
   K(e) = |J|/2 Hᵀ D H        (D evaluado en el baricentro)
   F(e)_m ≈ |J|/6 Q(baricentro, t)
+
+Todas las matrices locales se calculan a la vez (einsum) y se ensamblan
+con scipy.sparse (COO -> CSR), sin bucles de Python sobre los elementos.
 """
 
 import numpy as np
@@ -20,7 +23,7 @@ MASA_REF = np.array([[2.0, 1.0, 1.0],
 
 def geometria(nodes, elements):
     """Calcula |J| (E,), H (E, 2, 3) y baricentros (E, 2) de todos los elementos."""
-    p = nodes[elements]                      # (E, 3, 2)
+    p = nodes[elements]                         # (E, 3, 2)
     J = np.stack((p[:, 1] - p[:, 0],
                   p[:, 2] - p[:, 0]), axis=1)   # (E, 2, 2), filas = ∂(x,y)/∂r, ∂(x,y)/∂s
     detJ = J[:, 0, 0] * J[:, 1, 1] - J[:, 0, 1] * J[:, 1, 0]
@@ -32,7 +35,7 @@ def geometria(nodes, elements):
     J_inv[:, 1, 0] = -J[:, 1, 0]
     J_inv[:, 1, 1] = J[:, 0, 0]
     J_inv /= detJ[:, None, None]
-    H = J_inv @ GRAD_REF                     # (E, 2, 3): columnas = ∇φ_g(e,m)
+    H = J_inv @ GRAD_REF                        # (E, 2, 3): columnas = ∇φ_g(e,m)
     baricentros = p.mean(axis=1)
     return detJ, H, baricentros
 
@@ -43,13 +46,14 @@ def _indices(elements):
     return filas, cols
 
 
-def ensamblar_MK(nodes, elements, D_func):
-    """Ensambla M y K globales (todas las funciones de base, i.e. Neumann).
+def ensamblar_MK(nodes, elements, D_func, geom=None):
+    """Ensambla M y K globales sobre todos los nodos (matrices de Neumann).
 
     D_func(x, y) -> (E, 2, 2) se evalúa en los baricentros.
+    geom: resultado de geometria(), para no recalcularlo.
     """
     Mtot = len(nodes)
-    detJ, H, bc = geometria(nodes, elements)
+    detJ, H, bc = geometria(nodes, elements) if geom is None else geom
     D = D_func(bc[:, 0], bc[:, 1])
 
     Me = (detJ / 24.0)[:, None, None] * MASA_REF            # (E, 3, 3)
@@ -68,9 +72,8 @@ def ensamblar_F(nodes, elements, Q, t, geom=None):
     """Vector de cargas global F(t) con Q evaluada en el baricentro."""
     detJ, _, bc = geometria(nodes, elements) if geom is None else geom
     Fe = detJ / 6.0 * Q(bc[:, 0], bc[:, 1], t)               # igual para m = 0, 1, 2
-    F = np.zeros(len(nodes))
-    np.add.at(F, elements, Fe[:, None] * np.ones(3))
-    return F
+    return np.bincount(elements.ravel(), weights=np.repeat(Fe, 3),
+                       minlength=len(nodes))
 
 
 def restringir(A, idx):
