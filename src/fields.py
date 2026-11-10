@@ -84,3 +84,21 @@ def condicion_inicial_gaussiana(n_max, xs, ys, sigma):
     def n0(x, y):
         return gaussiana(x, y, n_max, xs, ys, sigma)
     return n0
+
+
+# --- Solución analítica ---
+
+def solucion_gaussiana(n_max, xs, ys, sigma0, D):
+    """Solución en el plano infinito con D constante (2x2) y Q = 0.
+
+    n(x, t) = n_max sigma0^2 / sqrt(det S) exp(-r^T S^-1 r / 2), con S(t) = sigma0^2 I + 2 D t.
+    """
+    D = np.asarray(D, dtype=float)
+
+    def n(x, y, t):
+        S = sigma0 ** 2 * np.eye(2) + 2.0 * D * t
+        Si = np.linalg.inv(S)
+        rx, ry = np.asarray(x) - xs, np.asarray(y) - ys
+        cuad = Si[0, 0] * rx ** 2 + 2.0 * Si[0, 1] * rx * ry + Si[1, 1] * ry ** 2
+        return n_max * sigma0 ** 2 / np.sqrt(np.linalg.det(S)) * np.exp(-0.5 * cuad)
+    return n

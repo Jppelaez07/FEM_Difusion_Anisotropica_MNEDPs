@@ -5,6 +5,7 @@ N puede ser un vector (Mtot,) o varios instantes (S, Mtot).
 """
 
 import numpy as np
+from matplotlib.tri import LinearTriInterpolator, Triangulation
 
 from . import assembly
 
@@ -41,6 +42,13 @@ def errores_L2_H1(nodes, elements, N, n_exacta, grad_exacta):
     g2 = (grad_h[:, None, 0] - gx) ** 2 + (grad_h[:, None, 1] - gy) ** 2
     err_H1 = np.sqrt(np.sum(area * (g2 @ CUAD_PESOS)))
     return err_L2, err_H1
+
+
+def evaluar_en_puntos(nodes, elements, N, xp, yp):
+    """Valor de la solución FEM en puntos arbitrarios (NaN fuera de la malla)."""
+    tri = Triangulation(nodes[:, 0], nodes[:, 1], elements)
+    valores = LinearTriInterpolator(tri, np.asarray(N, dtype=float))(xp, yp)
+    return np.ma.filled(valores.astype(float), np.nan)
 
 
 def norma_L2_discreta(M, v):
