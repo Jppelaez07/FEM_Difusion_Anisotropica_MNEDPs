@@ -51,6 +51,16 @@ def evaluar_en_puntos(nodes, elements, N, xp, yp):
     return np.ma.filled(valores.astype(float), np.nan)
 
 
+def error_L2_relativo(nodes, elements, N, n_exacta):
+    """||n_h - n|| / ||n|| en norma L2, con la cuadratura de 6 puntos."""
+    detJ, _, _ = assembly.geometria(nodes, elements)
+    xq = np.einsum("qm,emi->eqi", CUAD_BARI, nodes[elements])
+    nh = np.asarray(N, dtype=float)[elements] @ CUAD_BARI.T
+    ne = n_exacta(xq[..., 0], xq[..., 1])
+    pesos = (detJ / 2.0)[:, None] * CUAD_PESOS
+    return np.sqrt(np.sum(pesos * (nh - ne) ** 2) / np.sum(pesos * ne ** 2))
+
+
 def norma_L2_discreta(M, v):
     """Norma L2 de una función FEM con valores nodales v: sqrt(v^T M v)."""
     v = np.asarray(v, dtype=float)
@@ -106,17 +116,26 @@ def razon_aspecto(mom):
 
 
 def razon_aspecto_isolinea(nodes, elements, N, nivel, xc, yc, angulo, r_max, n_puntos=2001):
-    """Razón de aspecto de la isolínea n = nivel alrededor de (xc, yc).
+    """Razón de aspecto de la isolínea n = nivel de la solución FEM (ver razon_aspecto_curva)."""
+    tri = Triangulation(nodes[:, 0], nodes[:, 1], elements)
+    interp = LinearTriInterpolator(tri, np.asarray(N, dtype=float))
+    f = lambda xp, yp: np.ma.filled(interp(xp, yp).astype(float), np.nan)
+    return razon_aspecto_curva(f, nivel, xc, yc, angulo, r_max, n_puntos)
 
-    Mide la distancia a la que n baja de nivel en las direcciones +-angulo
-    (a lo largo) y +-(angulo + 90 grados) (a través), y retorna
-    (razón, radio a lo largo, radio a través). Cada radio es el promedio de los dos sentidos.
+
+def razon_aspecto_curva(f, nivel, xc, yc, angulo, r_max, n_puntos=2001):
+    """Razón de aspecto de la isolínea f = nivel alrededor de (xc, yc).
+
+    f(x, y) -> valores. Mide la distancia a la que f baja de nivel en las
+    direcciones +-angulo (a lo largo) y +-(angulo + 90 grados) (a través), y
+    retorna (razón, radio a lo largo, radio a través). Cada radio es el
+    promedio de los dos sentidos.
     """
     s = np.linspace(0.0, r_max, n_puntos)
 
     def radio(ang):
         xp, yp = xc + s * np.cos(ang), yc + s * np.sin(ang)
-        v = evaluar_en_puntos(nodes, elements, N, xp, yp)
+        v = f(xp, yp)
         abajo = np.flatnonzero(~(v >= nivel))
         if abajo.size == 0 or abajo[0] == 0:
             return np.nan
@@ -146,12 +165,6 @@ def vector_flujo_frontera(nodes, elements, D_func):
 
     w = -np.einsum("ei,eij,ejm->em", normal, D[e], H[e])        # (aristas, 3)
     return np.bincount(elements[e].ravel(), weights=w.ravel(), minlength=len(nodes))
-
-
-def tiempo_cuasi_estacionario(t, cambio_relativo, tol=1e-4):
-    """Primer instante con |N_k - N_{k-1}| / |N_k| < tol (NaN si no se alcanza)."""
-    ok = np.flatnonzero(np.asarray(cambio_relativo) < tol)
-    return float(t[ok[0]]) if ok.size else np.nan
 
 
 def angulo_principal(mom):

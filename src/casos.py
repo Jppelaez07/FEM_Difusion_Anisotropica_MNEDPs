@@ -26,8 +26,10 @@ COMUN = {
     "bc": "dirichlet",
     "theta": 1.0,
     "dt": 0.05,
-    "T": 40.0,
+    "T": 200.0,
     "n_guardar": 50,
+    "t_comparacion": [5.0, 10.0, 20.0, 40.0, 100.0, 200.0],   # instantes extra guardados
+    "fraccion_estacionario": 0.99,     # t_99: flujo de salida >= 0.99 * entrada
 }
 
 CASOS = {
@@ -39,10 +41,12 @@ CASOS = {
     "caso4b": {"titulo": "Caso 4b: B circular, D_par/D_perp = 100", "D_perp": 0.01,
                "campo": {"tipo": "circular", "xc": 10.0, "yc": 10.0},
                "fuente": {"xs": 14.0, "ys": 10.0}},
-    "caso5_dirichlet": {"titulo": "Caso 5: fuente pulsada, Dirichlet",
+    "caso5_dirichlet": {"titulo": "Caso 5: fuente pulsada, Dirichlet", "T": 40.0,
+                        "t_comparacion": [],
                         "campo": {"tipo": "uniforme", "alpha_grados": 30.0},
                         "fuente": {"t_apagado": 5.0}},
-    "caso5_neumann": {"titulo": "Caso 5: fuente pulsada, Neumann", "bc": "neumann",
+    "caso5_neumann": {"titulo": "Caso 5: fuente pulsada, Neumann", "bc": "neumann", "T": 40.0,
+                      "t_comparacion": [],
                       "campo": {"tipo": "uniforme", "alpha_grados": 30.0},
                       "fuente": {"t_apagado": 5.0}},
 }
@@ -110,7 +114,9 @@ def correr_caso(c, guardar=True):
     Q = construir_fuente(c)
     n0 = construir_n0(c)
     T, dt, theta = c["T"], c["dt"], c["theta"]
-    t_guardar = np.linspace(0.0, T, c["n_guardar"] + 1)
+    t_regulares = np.linspace(0.0, T, c["n_guardar"] + 1)
+    t_comp = np.array([t for t in c["t_comparacion"] if t <= T], dtype=float)
+    t_guardar = np.concatenate((t_regulares, t_comp))
 
     # Operadores para las métricas por paso
     geom = assembly.geometria(nodes, elements)
@@ -147,17 +153,33 @@ def correr_caso(c, guardar=True):
     salida_directa_th = theta * r["flujo_directo"][1:] + (1.0 - theta) * r["flujo_directo"][:-1]
     acum = lambda v: np.concatenate(([0.0], np.cumsum(v) * dt_real))
 
-    # Métricas en los instantes guardados
-    N_g = res["N"]
+    # Separar los instantes regulares de los de comparación
+    paso = lambda tt: np.rint(np.asarray(tt) / dt_real).astype(int)
+    pos = {k: i for i, k in enumerate(paso(res["t"]))}
+    i_reg = [pos[k] for k in paso(t_regulares)]
+    i_comp = [pos[k] for k in paso(t_comp)]
+    N_g = res["N"][i_reg]
+
     with np.errstate(invalid="ignore", divide="ignore"):       # masa nula en t = 0 si n0 = 0
         mom = postproc.momentos(nodes, M, N_g)
         aspecto = postproc.razon_aspecto(mom)
+
+    # t_99: primer instante con flujo de salida >= fraccion * entrada (solo fuente continua)
+    t_99 = {"directo": np.nan, "balance": np.nan}
+    if f["t_apagado"] is None:
+        entrada_total = f["Q0"] * 2.0 * np.pi * f["sigma"] ** 2
+        umbral = c["fraccion_estacionario"] * entrada_total
+        for clave, flujo, tt in (("directo", r["flujo_directo"], r["t"]),
+                                 ("balance", flujo_balance, r["t"][1:])):
+            ok = np.flatnonzero(flujo >= umbral)
+            t_99[clave] = float(tt[ok[0]]) if ok.size else np.nan
 
     salida = {
         "nombre": c["nombre"],
         "config": json.dumps(c, ensure_ascii=False),
         "nodes": nodes, "elements": elements, "boundary_nodes": bnd,
-        "t_guardados": res["t"], "N_guardados": N_g,
+        "t_guardados": res["t"][i_reg], "N_guardados": N_g,
+        "t_comparacion": res["t"][i_comp], "N_comparacion": res["N"][i_comp],
         "mom_xx": mom["xx"], "mom_yy": mom["yy"], "mom_xy": mom["xy"],
         "mom_xc": mom["xc"], "mom_yc": mom["yc"], "razon_aspecto": aspecto,
         "t": r["t"], "masa": r["masa"], "entrada": r["entrada"],
@@ -167,7 +189,7 @@ def correr_caso(c, guardar=True):
         "salida_balance_acum": acum(flujo_balance),
         "salida_directa_acum": acum(salida_directa_th),
         "cambio_rel": r["cambio_rel"], "n_min": r["n_min"], "n_max": r["n_max"],
-        "t_cuasi_estacionario": postproc.tiempo_cuasi_estacionario(r["t"], r["cambio_rel"]),
+        "t_99_directo": t_99["directo"], "t_99_balance": t_99["balance"],
     }
     if guardar:
         DIR_CASOS.mkdir(parents=True, exist_ok=True)
@@ -181,5 +203,6 @@ def cargar_caso(nombre):
         salida = {k: d[k] for k in d.files}
     salida["config"] = json.loads(str(salida["config"]))
     salida["nombre"] = str(salida["nombre"])
-    salida["t_cuasi_estacionario"] = float(salida["t_cuasi_estacionario"])
+    for k in ("t_99_directo", "t_99_balance"):
+        salida[k] = float(salida[k])
     return salida

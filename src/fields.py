@@ -102,3 +102,36 @@ def solucion_gaussiana(n_max, xs, ys, sigma0, D):
         cuad = Si[0, 0] * rx ** 2 + 2.0 * Si[0, 1] * rx * ry + Si[1, 1] * ry ** 2
         return n_max * sigma0 ** 2 / np.sqrt(np.linalg.det(S)) * np.exp(-0.5 * cuad)
     return n
+
+
+def solucion_fuente_continua(Q0, xs, ys, sigma, D, n_paneles=60, n_gauss=8):
+    """Solución en el plano infinito con fuente gaussiana continua, n0 = 0 y D constante.
+
+    n(x, t) = int_0^t Q0 sigma^2 / sqrt(det S(s)) exp(-r^T S(s)^-1 r / 2) ds,
+    con S(s) = sigma^2 I + 2 D s. La integral en s se hace con Gauss-Legendre
+    compuesta en paneles de tamaño geométrico (finos cerca de s = 0).
+    """
+    D = np.asarray(D, dtype=float)
+    xg, wg = np.polynomial.legendre.leggauss(n_gauss)
+
+    def nodos_cuadratura(t):
+        bordes = np.concatenate(([0.0], np.geomspace(1e-6 * t, t, n_paneles)))
+        a, b = bordes[:-1, None], bordes[1:, None]
+        s = (0.5 * (b - a) * xg + 0.5 * (a + b)).ravel()
+        w = (0.5 * (b - a) * wg).ravel()
+        return s, w
+
+    def n(x, y, t):
+        rx, ry = np.asarray(x, dtype=float) - xs, np.asarray(y, dtype=float) - ys
+        total = np.zeros(np.broadcast(rx, ry).shape)
+        if t <= 0:
+            return total
+        for s, w in zip(*nodos_cuadratura(t)):
+            a = sigma ** 2 + 2.0 * D[0, 0] * s
+            c = sigma ** 2 + 2.0 * D[1, 1] * s
+            b = 2.0 * D[0, 1] * s
+            det = a * c - b * b
+            cuad = (c * rx ** 2 - 2.0 * b * rx * ry + a * ry ** 2) / det
+            total += w * Q0 * sigma ** 2 / np.sqrt(det) * np.exp(-0.5 * cuad)
+        return total
+    return n
