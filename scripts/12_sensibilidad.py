@@ -31,7 +31,7 @@ import numpy as np
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 
-from src import assembly, fields, mesh, postproc, timestep, viz  # noqa: E402
+from src import assembly, fields, mesh, postproc, timestep, viz, rutas  # noqa: E402
 
 # Parámetros comunes (unidades adimensionales)
 Lx, Ly = 20.0, 20.0
@@ -59,9 +59,12 @@ r_anillo, w_anillo = 4.0, 0.5
 T_C, dt_C = 20.0, 0.1
 t_guardar_C = np.round(np.arange(0.0, T_C + 1e-9, 1.0), 10)
 h_C = [0.4, 0.2, 0.1, 0.05]
+if rutas.RAPIDO:                                 # modo rápido: sin las mallas de h = 0.05
+    h_numerica = [h for h in h_numerica if h > 0.05]
+    h_C = [h for h in h_C if h > 0.05]
 R_ref, dr_ref, dt_ref = 10.0, 0.002, 0.005      # referencia 1D
 
-RESULTADOS = RAIZ / "results"
+RESULTADOS = rutas.RESULTADOS
 COLOR_RAZON = {1000: "#D55E00", 100: "#0072B2", 1: "#009E73"}
 LINEA_ANGULO = {0.0: "-", 30.0: "--"}
 
@@ -421,6 +424,7 @@ def parte_C(reportar):
 
 
 def main():
+    rutas.avisar()
     RESULTADOS.mkdir(exist_ok=True)
     viz.estilo()
     partes = [p.upper() for p in sys.argv[1:]] or ["A", "B", "C"]

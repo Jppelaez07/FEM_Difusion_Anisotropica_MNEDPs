@@ -25,7 +25,7 @@ from matplotlib.colors import LogNorm, Normalize, SymLogNorm
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 
-from src import casos, fields, mesh, postproc, timestep, viz  # noqa: E402
+from src import casos, fields, mesh, postproc, rutas, timestep, viz  # noqa: E402
 
 plt.rcParams["animation.ffmpeg_path"] = imageio_ffmpeg.get_ffmpeg_exe()
 
@@ -35,7 +35,7 @@ MAPA = "inferno"
 DECADAS = 3
 ISOLINEAS = [0.01, 0.03, 0.1, 0.3, 1.0, 3.0]
 N_REJILLA = 360
-DIR_ANIM = RAIZ / "results" / "animaciones"
+DIR_ANIM = rutas.RESULTADOS / "animaciones"
 COLOR_ISO = "#d1d5db"
 COLOR_B = "#9ca3af"
 

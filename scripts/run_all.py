@@ -1,9 +1,15 @@
 """Corre todos los scripts del proyecto en orden y resume el resultado.
 
-La salida de cada script se guarda en results/logs/<script>.txt.
-Uso: python scripts/run_all.py
+Uso:
+  python scripts/run_all.py            corrida completa (unos 45 min), resultados en results/
+  python scripts/run_all.py --rapido   prueba en pocos minutos, resultados en results_rapido/
+
+El modo rápido no corre las animaciones, omite las mallas de h = 0.05 en
+12_sensibilidad.py y usa T = 100 en 10_casos.py. Sus resultados son reducidos y
+no deben usarse en el informe. La salida de cada script se guarda en <carpeta>/logs/.
 """
 
+import argparse
 import os
 import subprocess
 import sys
@@ -11,7 +17,6 @@ import time
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[1]
-DIR_LOGS = RAIZ / "results" / "logs"
 
 SCRIPTS = [
     "01_malla.py",            # malla y verificaciones de M y K
@@ -24,6 +29,7 @@ SCRIPTS = [
     "12_sensibilidad.py",     # sensibilidad a la anisotropía y difusión numérica
     "20_animaciones.py",      # animaciones (usa 10_casos)
 ]
+SIN_MODO_RAPIDO = {"20_animaciones.py"}
 
 
 def formato_tiempo(s):
@@ -31,14 +37,30 @@ def formato_tiempo(s):
 
 
 def main():
-    DIR_LOGS.mkdir(parents=True, exist_ok=True)
+    parser = argparse.ArgumentParser(description="Corre todos los scripts del proyecto.")
+    parser.add_argument("--rapido", action="store_true",
+                        help="prueba en pocos minutos; resultados reducidos en results_rapido/")
+    args = parser.parse_args()
+
     entorno = dict(os.environ, PYTHONIOENCODING="utf-8")
+    entorno.pop("MN_RAPIDO", None)
+    scripts = SCRIPTS
+    carpeta = RAIZ / "results"
+    if args.rapido:
+        entorno["MN_RAPIDO"] = "1"
+        scripts = [s for s in SCRIPTS if s not in SIN_MODO_RAPIDO]
+        carpeta = RAIZ / "results_rapido"
+        print("MODO RÁPIDO: resultados reducidos en results_rapido/, no usar en el informe.")
+        print("Se omiten: " + ", ".join(sorted(SIN_MODO_RAPIDO)) + "\n", flush=True)
+    dir_logs = carpeta / "logs"
+    dir_logs.mkdir(parents=True, exist_ok=True)
+
     resultados = []
     inicio = time.time()
-    for script in SCRIPTS:
+    for script in scripts:
         print(f"Corriendo {script} ...", flush=True)
         t0 = time.time()
-        log = DIR_LOGS / f"{Path(script).stem}.txt"
+        log = dir_logs / f"{Path(script).stem}.txt"
         with open(log, "w", encoding="utf-8") as fh:
             proc = subprocess.run([sys.executable, str(RAIZ / "scripts" / script)], cwd=RAIZ,
                                   env=entorno, stdout=fh, stderr=subprocess.STDOUT)
@@ -48,7 +70,7 @@ def main():
         print(f"  {'OK   ' if ok else 'FALLO'} {formato_tiempo(dt)}   (salida en {log.relative_to(RAIZ)})",
               flush=True)
 
-    print("\nRESUMEN")
+    print("\nRESUMEN" + (" (MODO RÁPIDO)" if args.rapido else ""))
     for script, ok, dt in resultados:
         print(f"  {script:<22s} {'OK' if ok else 'FALLO':<6s} {formato_tiempo(dt)}")
     n_fallos = sum(not ok for _, ok, _ in resultados)

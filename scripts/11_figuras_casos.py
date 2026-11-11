@@ -20,7 +20,7 @@ from matplotlib.colors import LogNorm
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 
-from src import casos, fields, postproc, viz  # noqa: E402
+from src import casos, fields, postproc, rutas, viz  # noqa: E402
 
 PANELES = ["caso1", "caso2", "caso3", "caso4a", "caso4b", "caso5_dirichlet"]
 ETIQUETAS = {
@@ -188,6 +188,7 @@ def figura_balance_caso5(datos):
 
 
 def main():
+    rutas.avisar()
     viz.estilo()
     faltan = [n for n in casos.CASOS if not (casos.DIR_CASOS / f"{n}.npz").exists()]
     if faltan:

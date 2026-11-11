@@ -10,10 +10,11 @@ from pathlib import Path
 
 import numpy as np
 
-from . import assembly, fields, mesh, postproc, timestep
+from . import assembly, fields, mesh, postproc, rutas, timestep
 
 RAIZ = Path(__file__).resolve().parents[1]
-DIR_CASOS = RAIZ / "results" / "casos"
+DIR_CASOS = rutas.RESULTADOS / "casos"
+T_RAPIDO = 100.0                     # T máximo en modo rápido
 
 COMUN = {
     "dominio": {"Lx": 20.0, "Ly": 20.0},
@@ -67,6 +68,8 @@ def config(nombre):
     """Configuración completa de un caso."""
     c = _combinar(COMUN, CASOS[nombre])
     c["nombre"] = nombre
+    if rutas.RAPIDO and c["T"] > T_RAPIDO:
+        c["T"] = T_RAPIDO
     return c
 
 

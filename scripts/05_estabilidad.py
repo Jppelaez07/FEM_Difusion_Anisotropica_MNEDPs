@@ -23,7 +23,7 @@ from scipy.sparse.linalg import eigsh
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 
-from src import assembly, fields, mesh, postproc, timestep  # noqa: E402
+from src import assembly, fields, mesh, postproc, timestep, rutas  # noqa: E402
 
 # Parámetros comunes (unidades adimensionales)
 Lx, Ly = 20.0, 20.0
@@ -43,7 +43,7 @@ sigma0_B = 2.0 * h_osc
 dt_osc, T_osc = 0.5, 5.0
 t_cortes = [0.5, 1.0]
 
-RESULTADOS = RAIZ / "results"
+RESULTADOS = rutas.RESULTADOS
 COLOR = {0.9: "#1d4ed8", 1.1: "#c2410c", 1.0: "#1d4ed8", 0.5: "#c2410c"}
 
 D_func = fields.funcion_tensor(fields.campo_uniforme(alpha), D_par, D_perp)

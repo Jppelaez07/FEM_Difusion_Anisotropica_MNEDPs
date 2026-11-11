@@ -17,7 +17,7 @@ from matplotlib.patches import Ellipse
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 
-from src import fields, mesh, postproc, timestep  # noqa: E402
+from src import fields, mesh, postproc, timestep, rutas  # noqa: E402
 
 # Parámetros (unidades adimensionales)
 Lx, Ly = 20.0, 20.0
@@ -31,7 +31,7 @@ t_figura = [0.0, 0.5, 1.5, 4.0]
 t_guardar = np.round(np.arange(0.0, T + dt / 2, 0.1), 10)
 
 TOL_MASA = 1e-10
-RESULTADOS = RAIZ / "results"
+RESULTADOS = rutas.RESULTADOS
 
 
 def main():

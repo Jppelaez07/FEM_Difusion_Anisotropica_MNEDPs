@@ -24,7 +24,7 @@ from scipy.sparse.linalg import spsolve
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 
-from src import assembly, fields, mesh, postproc, timestep  # noqa: E402
+from src import assembly, fields, mesh, postproc, timestep, rutas  # noqa: E402
 
 # Parámetros
 D_par, D_perp = 1.0, 0.1
@@ -39,7 +39,7 @@ dt_temporal = [0.1, 0.05, 0.025, 0.0125, 0.00625]
 thetas = [1.0, 0.5]
 theta_ref, dt_ref = 0.5, 1e-4
 
-RESULTADOS = RAIZ / "results"
+RESULTADOS = rutas.RESULTADOS
 COLOR = {1.0: "#1d4ed8", 0.5: "#c2410c"}
 COLOR_REF = "#6b7280"
 

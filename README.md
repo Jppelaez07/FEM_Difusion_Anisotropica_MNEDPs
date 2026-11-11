@@ -52,14 +52,29 @@ python -m pip install -r requirements.txt
 
 ## Cómo correr
 
-Todo el proyecto, en orden (unos 50 minutos; las animaciones toman la mayor parte):
+Hay dos formas de correr todo el proyecto. Ambas imprimen el tiempo de cada script y un
+resumen OK/FALLO, y guardan la salida completa de cada script en `<carpeta>/logs/`.
+
+**Corrida completa** (unos 45 minutos; las animaciones toman la mayor parte). Genera todos los
+resultados del informe en `results/`:
 
 ```
 python scripts/run_all.py
 ```
 
-Imprime el tiempo de cada script y un resumen OK/FALLO. La salida completa de cada script queda
-en `results/logs/`.
+**Corrida rápida** (unos 5 minutos), para probar que el código funciona:
+
+```
+python scripts/run_all.py --rapido
+```
+
+En este modo no se generan las animaciones, `12_sensibilidad.py` omite las mallas de h = 0.05 y
+`10_casos.py` usa T = 100 en lugar de 300. Los resultados son reducidos y se guardan en
+`results_rapido/`, de modo que nunca sobrescriben los de `results/`. Los scripts que cambian
+en este modo lo indican al inicio con "MODO RÁPIDO: resultados reducidos, no usar en el informe".
+
+Las animaciones ya están incluidas en `results/animaciones/`, así que no hace falta generarlas
+para verlas.
 
 También se puede correr cada script por separado, desde la carpeta raíz del proyecto:
 
@@ -84,8 +99,10 @@ src/         código del método
   postproc.py  masa, momentos, flujo por la frontera, errores L2 y H1
   casos.py     configuración de los escenarios y ejecución de un caso
   viz.py       estilo de las figuras e interpolación a rejillas
+  rutas.py     carpeta de resultados y modo rápido
 scripts/     verificaciones, escenarios, figuras y animaciones (cada uno corre solo)
-results/     resultados (se generan al correr los scripts)
+results/     resultados completos (incluye las animaciones en results/animaciones/)
+results_rapido/  resultados reducidos del modo rápido (no se versiona)
 ```
 
 ## Qué genera cada script

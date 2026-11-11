@@ -19,7 +19,7 @@ import numpy as np
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 
-from src import fields, mesh, postproc, timestep  # noqa: E402
+from src import fields, mesh, postproc, timestep, rutas  # noqa: E402
 
 # Parámetros (unidades adimensionales)
 Lx, Ly = 20.0, 20.0
@@ -35,7 +35,7 @@ h_global, r_ref = 1.0, 7.0
 h_fuente = [0.4, 0.2, 0.1]
 
 t_cortes = [0.5, 2.0]
-RESULTADOS = RAIZ / "results"
+RESULTADOS = rutas.RESULTADOS
 COLORES = ["#93c5fd", "#3b82f6", "#1e3a8a"]          # de malla gruesa a fina
 COLOR_T = {0.5: "#c2410c", 2.0: "#1d4ed8"}
 

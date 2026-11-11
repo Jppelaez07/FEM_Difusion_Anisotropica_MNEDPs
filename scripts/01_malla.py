@@ -15,7 +15,7 @@ import numpy as np
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 
-from src import assembly, fields, mesh  # noqa: E402
+from src import assembly, fields, mesh, rutas  # noqa: E402
 
 # Parámetros (unidades adimensionales)
 Lx, Ly = 20.0, 20.0
@@ -25,7 +25,7 @@ D_par, D_perp = 1.0, 0.1
 alpha = 0.0                     # dirección de B (rad)
 
 TOL = 1e-10
-RESULTADOS = RAIZ / "results"
+RESULTADOS = rutas.RESULTADOS
 
 
 def main():

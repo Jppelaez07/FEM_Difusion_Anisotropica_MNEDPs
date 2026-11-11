@@ -6,3 +6,6 @@ results/**/*.npz
 *.msh
 .DS_Store
 results/logs/
+
+# Resultados reducidos del modo rápido (scripts/run_all.py --rapido)
+results_rapido/

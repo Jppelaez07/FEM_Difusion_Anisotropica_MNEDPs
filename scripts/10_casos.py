@@ -17,7 +17,7 @@ import numpy as np
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 
-from src import casos, fields, postproc  # noqa: E402
+from src import casos, fields, postproc, rutas  # noqa: E402
 
 CASOS_EXACTA = ["caso1", "caso2", "caso3"]
 NIVEL_ISOLINEA = 0.1          # fracción de max n
@@ -35,6 +35,7 @@ def fmt_t(v):
 
 
 def main():
+    rutas.avisar()
     casos.DIR_CASOS.mkdir(parents=True, exist_ok=True)
     lineas = []
 
