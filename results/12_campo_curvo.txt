@@ -1,0 +1,35 @@
+C. DIFUSIÓN PERPENDICULAR NUMÉRICA CON CAMPO CURVO (B circular, Neumann, Q = 0)
+   n0 = exp(-(r - 4)^2 / (2 0.5^2)), D_perp = 0.001, T = 20, theta = 1, dt = 0.1
+   Referencia 1D radial: dr = 0.002, dt = 0.005 (Crank-Nicolson).
+   Crecimiento de la varianza radial de referencia: 3.932317e-02 (2 D_perp T = 4.000000e-02)
+   Con dr y dt a la mitad cambia en 5.8e-12; error L2 entre ambas referencias en t = T: 9.9e-07
+   Medidas de D_perp_num:
+   - varianza (secundaria): (1/2) pendiente de [var_FEM(t) - var_ref(t)].
+   - ajuste: D_ajuste(FEM) - D_ajuste(referencia), con D_ajuste el D de la referencia 1D
+     que, partiendo del perfil en t = 0, mejor ajusta (mínimos cuadrados) el perfil radial
+     promediado en el ángulo en t = T. Restar el ajuste de la referencia cancela el sesgo
+     del método (al aplicarlo a la referencia da D/D_perp - 1 = -1.1e-02).
+
+   Medida principal: error L2 relativo frente a la referencia 1D en t = T.
+   Exceso = D_perp_num(ajuste) - D_perp_num(ajuste, caso 1:1) en la misma malla:
+   la parte de la difusión numérica que se debe a D_par.
+    Dp/Dt     h   nodos      min n   error L2   tasa exceso/D_perp   tasa exceso/D_par Dnum/D_perp*
+        1  0.40    3011  -3.17e-09  3.626e-02      -             -      -            -  -6.2399e-04
+        1  0.20   11835  -5.08e-26  9.328e-03   1.95             -      -            -  -1.5861e-04
+        1  0.10   46684  -8.23e-46  2.330e-03   2.00             -      -            -  -4.2196e-05
+        1  0.05  185707   4.51e-90  5.640e-04   2.04             -      -            -  -1.3087e-05
+
+      100  0.40    3011  -1.46e-02  1.003e-01      -    1.1581e+00      -   1.1581e-02   1.0574e-02
+      100  0.20   11835  -1.18e-03  3.082e-02   1.69    3.3453e-01   1.78   3.3453e-03   2.6365e-03
+      100  0.10   46684  -1.37e-06  8.246e-03   1.90    8.7782e-02   1.93   8.7782e-04   6.5585e-04
+      100  0.05  185707  -1.55e-20  2.080e-03   1.98    2.2241e-02   1.98   2.2241e-04   1.6138e-04
+
+     1000  0.40    3011  -5.74e-02  2.949e-01      -    6.4788e+00      -   6.4788e-03   9.5066e-02
+     1000  0.20   11835  -2.77e-02  1.431e-01   1.04    2.4472e+00   1.40   2.4472e-03   2.8141e-02
+     1000  0.10   46684  -5.15e-03  5.234e-02   1.45    7.8076e-01   1.65   7.8076e-04   6.9923e-03
+     1000  0.05  185707  -7.00e-05  1.535e-02   1.76    2.1605e-01   1.85   2.1605e-04   1.7469e-03
+
+   * Medida secundaria por varianza radial. Está sesgada: cuando n_h tiene lóbulos
+     negativos a los lados del anillo (ver min n), estos entran con peso negativo y
+     lejos del centro, y reducen la varianza; subestima la difusión numérica.
+

@@ -68,6 +68,7 @@ def norma_L2_discreta(M, v):
 
 
 def _MN(M, N):
+    """Producto M N para uno o varios instantes."""
     N = np.asarray(N, dtype=float)
     return (M @ N.T).T
 
@@ -75,13 +76,6 @@ def _MN(M, N):
 def masa(M, N):
     """Masa total 1^T M N."""
     return _MN(M, N).sum(axis=-1)
-
-
-def centro_de_masa(nodes, M, N):
-    """Centro de masa (xc, yc)."""
-    MN = _MN(M, N)
-    m = MN.sum(axis=-1)
-    return MN @ nodes[:, 0] / m, MN @ nodes[:, 1] / m
 
 
 def momentos(nodes, M, N):
@@ -149,8 +143,8 @@ def razon_aspecto_curva(f, nivel, xc, yc, angulo, r_max, n_puntos=2001):
 
 def vector_flujo_frontera(nodes, elements, D_func):
     """Vector g tal que g @ N = flujo saliente -int (D grad n_h) . n_ext sobre la frontera."""
-    _, H, bc = assembly.geometria(nodes, elements)
-    D = D_func(bc[:, 0], bc[:, 1])
+    _, H, baric = assembly.geometria(nodes, elements)
+    D = D_func(baric[:, 0], baric[:, 1])
 
     # Aristas de frontera: las que pertenecen a un solo triángulo
     loc = np.array([[0, 1], [1, 2], [2, 0]])

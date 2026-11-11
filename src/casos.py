@@ -71,6 +71,7 @@ def config(nombre):
 
 
 def construir_campo(c):
+    """Campo B(x, y) descrito en c["campo"]."""
     tipo = c["campo"]["tipo"]
     if tipo == "uniforme":
         return fields.campo_uniforme(np.radians(c["campo"]["alpha_grados"]))
@@ -82,6 +83,7 @@ def construir_campo(c):
 
 
 def construir_fuente(c):
+    """Fuente Q(x, y, t) descrita en c["fuente"] (continua o pulsada)."""
     f = c["fuente"]
     factor = None
     if f["t_apagado"] is not None:
@@ -93,6 +95,7 @@ def construir_fuente(c):
 
 
 def construir_n0(c):
+    """Condición inicial n0(x, y) descrita en c["n0"]."""
     if c["n0"]["tipo"] == "cero":
         return lambda x, y: np.zeros_like(np.asarray(x, dtype=float))
     if c["n0"]["tipo"] == "gaussiana":

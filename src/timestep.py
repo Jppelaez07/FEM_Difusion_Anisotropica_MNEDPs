@@ -37,7 +37,7 @@ def metodo_theta(M, K, N0, T, dt, theta=1.0, F=None, t_guardar=None, al_paso=Non
     guardar = _pasos_guardados(t_guardar, T, dt, Nt)
 
     A = (M + theta * dt * K).tocsc()
-    B = (M - (1.0 - theta) * dt * K).tocsr()
+    R = (M - (1.0 - theta) * dt * K).tocsr()       # matriz del lado derecho
     lu = splu(A)                        # se factoriza una sola vez
 
     variable = callable(F)
@@ -58,10 +58,10 @@ def metodo_theta(M, K, N0, T, dt, theta=1.0, F=None, t_guardar=None, al_paso=Non
         t_sig = (k + 1) * dt
         if variable:
             F_sig = F(t_sig)
-            rhs = B @ N + dt * (theta * F_sig + (1.0 - theta) * F_k)
+            rhs = R @ N + dt * (theta * F_sig + (1.0 - theta) * F_k)
             F_k = F_sig
         else:
-            rhs = B @ N + dt * F_cte
+            rhs = R @ N + dt * F_cte
         N = lu.solve(rhs)
         if al_paso is not None:
             al_paso(k + 1, t_sig, N)

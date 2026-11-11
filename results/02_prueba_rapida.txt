@@ -1,0 +1,21 @@
+PRUEBA RÁPIDA: gaussiana, Q = 0, Neumann, campo uniforme
+  Malla: 4600 nodos, 9118 triángulos
+  D_par = 1, D_perp = 0.1, alpha = 30 grados, sigma0 = 1
+  theta = 1, dt = 0.01, T = 4
+
+      t           masa    <x^2>     teo    <y^2>     teo     <xy>     teo   angulo       min n
+   0.00   6.2847810002   1.0042  1.0000   1.0042  1.0000   0.0000  0.0000        -   3.720e-44
+   0.50   6.2847810002   1.7794  1.7750   1.3295  1.3250   0.3897  0.3897    30.00  -7.293e-06
+   1.00   6.2847810002   2.5549  2.5500   1.6553  1.6500   0.7791  0.7794    30.00  -2.049e-05
+   1.50   6.2847810002   3.3308  3.3250   1.9815  1.9750   1.1685  1.1691    30.00  -4.939e-05
+   2.00   6.2847810002   4.1070  4.1000   2.3079  2.3000   1.5578  1.5588    30.00  -4.343e-05
+   3.00   6.2847810002   5.6596  5.6500   2.9611  2.9500   2.3364  2.3383    30.00  -5.088e-05
+   4.00   6.2847810002   7.2099  7.2000   3.6137  3.6000   3.1140  3.1177    30.00  -5.536e-05
+
+VERIFICACIONES
+  Variación relativa máx. de la masa: 7.349e-15  (< 1e-10: OK)
+  Ángulo del eje mayor en t = 4:  30.00 grados  (esperado 30: OK)
+  Error relativo de los momentos en t = 4 frente a dominio infinito: 1.91e-03
+  Mínimo de n en toda la simulación: -5.537e-05
+
+RESULTADO: OK

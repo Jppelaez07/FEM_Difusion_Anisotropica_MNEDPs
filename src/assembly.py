@@ -49,8 +49,8 @@ def ensamblar_MK(nodes, elements, D_func, geom=None):
     D_func(x, y) -> (E, 2, 2). geom: resultado de geometria(), si ya se calculó.
     """
     Mtot = len(nodes)
-    detJ, H, bc = geometria(nodes, elements) if geom is None else geom
-    D = D_func(bc[:, 0], bc[:, 1])
+    detJ, H, baric = geometria(nodes, elements) if geom is None else geom
+    D = D_func(baric[:, 0], baric[:, 1])
 
     Me = (detJ / 24.0)[:, None, None] * MASA_REF
     Ke = (detJ / 2.0)[:, None, None] * np.einsum("eim,eij,ejn->emn", H, D, H)
@@ -66,8 +66,8 @@ def ensamblar_MK(nodes, elements, D_func, geom=None):
 
 def ensamblar_F(nodes, elements, Q, t, geom=None):
     """Vector de cargas global F en el instante t."""
-    detJ, _, bc = geometria(nodes, elements) if geom is None else geom
-    Fe = detJ / 6.0 * Q(bc[:, 0], bc[:, 1], t)
+    detJ, _, baric = geometria(nodes, elements) if geom is None else geom
+    Fe = detJ / 6.0 * Q(baric[:, 0], baric[:, 1], t)
     return np.bincount(elements.ravel(), weights=np.repeat(Fe, 3),
                        minlength=len(nodes))
 

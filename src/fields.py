@@ -68,6 +68,7 @@ def funcion_tensor(B, D_par, D_perp):
 # --- Fuente y condición inicial ---
 
 def gaussiana(x, y, amplitud, xc, yc, sigma):
+    """amplitud exp(-((x - xc)^2 + (y - yc)^2) / (2 sigma^2))."""
     return amplitud * np.exp(-((x - xc) ** 2 + (y - yc) ** 2) / (2.0 * sigma ** 2))
 
 

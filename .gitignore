@@ -6,6 +6,4 @@ results/**/*.mp4
 results/**/*.npz
 *.msh
 .DS_Store
-
-# Animaciones (pesadas; se generan con scripts/20_animaciones.py)
-results/animaciones/
+results/logs/

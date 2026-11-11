@@ -1,0 +1,53 @@
+1. RESUMEN AL FINAL DE CADA CASO
+  caso                T     masa salida/entrada   <x^2>   <y^2>   <xy> aspecto      min n   max n         t_99 (t_99 directo)
+  caso1             300   46.077         1.0023   15.24   15.24   0.00    1.00  -1.50e-19  0.7529       103.10        (98.90)
+  caso2             300   77.150         1.0000   16.68    7.11  -0.00    1.53  -1.74e-07  1.9330       187.00       (185.50)
+  caso3             300   78.289         0.9969   16.71    1.10  -0.00    3.89  -2.60e-03  3.7139       196.45       (207.35)
+  caso4a            300  101.707         1.0115   16.87   10.49  -0.09    1.27  -1.18e-06  1.9759       236.45       (196.80)
+  caso4b            300  470.456         0.0327   11.26   11.08   0.00    1.01  -6.32e-03  6.8276 no alcanzado (no alcanzado)
+  caso5_dirichlet    40    4.757              -   18.61   13.08   8.66    1.92  -4.34e-07  0.0484    no aplica    (no aplica)
+  caso5_neumann      40    7.854              -   30.68   16.96  14.92    2.33  -4.34e-07  0.0552    no aplica    (no aplica)
+  salida/entrada = flujo directo -int D grad n . n_ext dividido por Q0 2 pi sigma^2 (en t = T);
+  t_99 = primer t con dM/dt < 1% de la entrada (balance); entre paréntesis, como referencia,
+  primer t con flujo directo >= 0.99 entrada;
+  aspecto = sqrt(l1/l2) de los momentos; min n = mínimo en toda la simulación.
+  Caso 4b: las líneas de B son círculos cerrados, así que la masa solo sale por difusión
+  perpendicular. Distancia del anillo a la frontera ~ 6; tiempo de escape ~ d^2 / (2 D_perp) = 1800 >> T = 300.
+  En t = T la salida es 5.14e-02 y la masa 470.46 (entrada acumulada 471.24).
+
+2. CASOS 1-3 FRENTE A LA SOLUCIÓN EXACTA (fuente continua, plano infinito)
+  Isolínea n = 0.1 max n; razón = radio a lo largo de B / radio a través.
+  caso        t error L2 rel.  max n FEM max n exacta razón FEM razón exacta sqrt(Dp/Dt) dif. FEM-exacta
+  caso1       5     2.493e-03     0.4632       0.4642     1.000        1.000       1.000            0.0%
+  caso1      10     9.309e-03     0.5486       0.5493     1.000        1.000       1.000            0.0%
+  caso1      20     5.664e-02     0.6340       0.6352     1.000        1.000       1.000            0.0%
+  caso1      40     1.740e-01     0.7089       0.7214     1.000        1.000       1.000            0.0%
+  caso1     100     4.087e-01     0.7506       0.8357     1.000        1.000       1.000            0.0%
+  caso1     200     5.572e-01     0.7529       0.9223     1.000        1.000       1.000            0.0%
+  caso1     300     6.197e-01     0.7529       0.9730     1.000        1.000       1.000            0.0%
+
+  caso2       5     4.178e-03     0.9247       0.9287     2.574        2.579       3.162            0.2%
+  caso2      10     7.516e-03     1.1749       1.1787     2.803        2.812       3.162            0.3%
+  caso2      20     4.069e-02     1.4352       1.4400     2.827        2.962       3.162            4.5%
+  caso2      40     1.203e-01     1.6838       1.7074     2.495        3.051       3.162           18.2%
+  caso2     100     3.108e-01     1.8921       2.0656     2.064        3.112       3.162           33.7%
+  caso2     200     4.898e-01     1.9307       2.3383     1.965        3.135       3.162           37.3%
+  caso2     300     5.793e-01     1.9330       2.4981     1.958        3.143       3.162           37.7%
+
+  caso3       5     1.281e-02     1.2481       1.2637     3.894        3.938      10.000            1.1%
+  caso3      10     1.922e-02     1.7522       1.7797     4.977        5.079      10.000            2.0%
+  caso3      20     5.189e-02     2.3601       2.4073     5.717        6.331      10.000            9.7%
+  caso3      40     1.355e-01     3.0067       3.1261     5.533        7.527      10.000           26.5%
+  caso3     100     3.307e-01     3.5923       4.1694     4.880        8.726      10.000           44.1%
+  caso3     200     5.094e-01     3.7065       4.9989     4.676        9.274      10.000           49.6%
+  caso3     300     5.983e-01     3.7139       5.4931     4.658        9.483      10.000           50.9%
+
+3. BALANCE DE MASA, CASO 5 (fuente pulsada)
+  caso5_neumann:
+    int Q dt (discreta) = 7.85400105;  analítica Q0 2 pi sigma^2 t_off = 7.85398163  (dif. rel. 2.5e-06)
+    max_t |masa - int Q dt| / int Q dt = 3.12e-14  (< 1e-10: OK)
+  caso5_dirichlet:
+    int Q dt (discreta) = 7.85400105;  analítica Q0 2 pi sigma^2 t_off = 7.85398163  (dif. rel. 2.5e-06)
+    masa final = 4.75694, salida acumulada (directa) = 3.12956
+    max_t |masa + salida directa - int Q dt| / int Q dt = 4.14e-03
+

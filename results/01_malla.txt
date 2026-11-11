@@ -1,0 +1,22 @@
+MALLA
+  Dominio: [0, 20] x [0, 20],  fuente en (10, 10)
+  h_global = 1,  h_source = 0.1,  r_ref = 3
+  Nodos:              4600
+    de frontera:      80
+    interiores:       4520
+  Elementos:          9118
+  h mínimo:           0.0795
+  h máximo:           1.3025
+  Ángulo mínimo:      30.03°
+
+VERIFICACIONES (tolerancia 1e-10)
+  min |J| > 0                       4.677e-03  OK
+  |suma |J|/2 - Lx*Ly|              0.000e+00  OK
+  |1^T M 1 - Lx*Ly|                 0.000e+00  OK
+  max|M - M^T|                      0.000e+00  OK
+  max|K - K^T|                      2.220e-16  OK
+  max|K * 1|                        8.882e-16  OK
+  max dist. borde (frontera)        0.000e+00  OK
+  min dist. borde (interiores)      5.562e-01  OK
+
+RESULTADO: TODAS LAS VERIFICACIONES PASAN

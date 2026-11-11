@@ -1,0 +1,14 @@
+SOLUCIÓN GAUSSIANA ANISOTRÓPICA
+  D_par = 1, D_perp = 0.1, B a 30 grados, sigma0 = 1
+  Dirichlet, theta = 1, dt = 0.002, T = 2
+  Mallas refinadas: h_global = 1, r_ref = 7
+
+ERROR L2 RELATIVO
+  h fuente  nodos        t=0      t=0.5        t=1        t=2        máx
+     0.400   2103  1.536e-02  1.558e-02  1.610e-02  1.699e-02  1.699e-02
+     0.200   6522  3.864e-03  3.647e-03  3.484e-03  3.203e-03  3.864e-03
+     0.100  22201  9.669e-04  8.107e-04  8.076e-04  7.994e-04  9.669e-04
+
+  Tasa del error en t = 2 al refinar h fuente: 2.41, 2.00  (esperado cerca de 2)
+  Malla fina: mínimo de n = -1.760e-09, variación relativa de la masa hasta t = 2: 1.33e-06
+  (la masa puede bajar algo por la frontera absorbente)
