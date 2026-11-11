@@ -1,6 +1,9 @@
-"""Estilo común de las figuras."""
+"""Estilo común de las figuras e interpolación a rejillas regulares."""
 
 import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.tri import Triangulation
+from scipy.sparse import csr_matrix
 
 # Paleta Okabe-Ito (apta para daltonismo), en orden fijo por caso
 PALETA_CASOS = {
@@ -30,6 +33,27 @@ def estilo():
         "lines.linewidth": 2.0,
         "savefig.dpi": 200,
     })
+
+
+def matriz_rejilla(nodes, elements, xg, yg):
+    """Matriz dispersa P tal que (P @ N).reshape(len(yg), len(xg)) interpola N en la rejilla.
+
+    Usa las coordenadas baricéntricas de cada punto en su triángulo; fuera de la malla vale 0.
+    """
+    X, Y = np.meshgrid(xg, yg)
+    px, py = X.ravel(), Y.ravel()
+    e = Triangulation(nodes[:, 0], nodes[:, 1], elements).get_trifinder()(px, py)
+    dentro = np.flatnonzero(e >= 0)
+    tri = elements[e[dentro]]
+    p0, p1, p2 = (nodes[tri[:, m]] for m in range(3))
+    v0, v1 = p1 - p0, p2 - p0
+    vx, vy = px[dentro] - p0[:, 0], py[dentro] - p0[:, 1]
+    det = v0[:, 0] * v1[:, 1] - v1[:, 0] * v0[:, 1]
+    l1 = (vx * v1[:, 1] - v1[:, 0] * vy) / det
+    l2 = (v0[:, 0] * vy - vx * v0[:, 1]) / det
+    pesos = np.column_stack((1.0 - l1 - l2, l1, l2))
+    filas = np.repeat(dentro, 3)
+    return csr_matrix((pesos.ravel(), (filas, tri.ravel())), shape=(px.size, len(nodes)))
 
 
 def guardar(fig, ruta_sin_extension):

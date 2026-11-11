@@ -210,10 +210,11 @@ def anillo(r):
     return np.exp(-(r - r_anillo) ** 2 / (2.0 * w_anillo ** 2))
 
 
-def referencia_radial(D, tiempos, R=R_ref, dr=dr_ref, dt_r=dt_ref):
+def referencia_radial(D, tiempos, R=R_ref, dr=dr_ref, dt_r=dt_ref, n_inicial=None):
     """Solución de dn/dt = (1/r) d/dr (r D dn/dr) con volúmenes finitos y Crank-Nicolson.
 
-    Flujo nulo en r = 0 y r = R. Retorna (r de los centros de celda, n en cada instante).
+    Flujo nulo en r = 0 y r = R. n_inicial(r): condición inicial (por defecto, el anillo).
+    Retorna (r de los centros de celda, n en cada instante).
     """
     from scipy.sparse import diags
     from scipy.sparse.linalg import splu
@@ -230,7 +231,7 @@ def referencia_radial(D, tiempos, R=R_ref, dr=dr_ref, dt_r=dt_ref):
     lu = splu((I - 0.5 * dt_r * L).tocsc())
     B = (I + 0.5 * dt_r * L).tocsr()
 
-    n = anillo(r)
+    n = anillo(r) if n_inicial is None else n_inicial(r)
     pasos = np.rint(np.asarray(tiempos) / dt_r).astype(int)
     salida = np.empty((len(pasos), nc))
     k = 0
@@ -262,6 +263,42 @@ def varianza_radial_fem(nodes, elements, N):
     return var
 
 
+BORDES_PERFIL = np.arange(0.0, 9.5 + 1e-9, 0.05)
+CENTROS_PERFIL = 0.5 * (BORDES_PERFIL[1:] + BORDES_PERFIL[:-1])
+
+
+def operador_perfil(nodes, elements):
+    """Función N -> perfil radial promediado en el ángulo (muestreo en una rejilla fina)."""
+    R = BORDES_PERFIL[-1]
+    xg = np.linspace(xs - R, xs + R, 801)
+    yg = np.linspace(ys - R, ys + R, 801)
+    P = viz.matriz_rejilla(nodes, elements, xg, yg)
+    X, Y = np.meshgrid(xg, yg)
+    clase = np.digitize(np.hypot(X - xs, Y - ys).ravel(), BORDES_PERFIL) - 1
+    ok = (clase >= 0) & (clase < len(CENTROS_PERFIL))
+    cuenta = np.bincount(clase[ok], minlength=len(CENTROS_PERFIL))
+    return lambda N: np.bincount(clase[ok], weights=(P @ N)[ok],
+                                 minlength=len(CENTROS_PERFIL)) / cuenta
+
+
+def ajustar_D(perfil, perfil_0, T):
+    """D de la referencia 1D que, partiendo de perfil_0, mejor ajusta perfil en t = T.
+
+    Partir del perfil inicial de la propia solución evita contar como difusión
+    el error de interpolar la condición inicial.
+    """
+    from scipy.optimize import minimize_scalar
+    inicial = lambda rr: np.interp(rr, CENTROS_PERFIL, perfil_0)
+
+    def costo(logD):
+        r, n = referencia_radial(10.0 ** logD, [T], dr=0.005, dt_r=0.02, n_inicial=inicial)
+        return np.sum(CENTROS_PERFIL * (perfil - np.interp(CENTROS_PERFIL, r, n[0])) ** 2)
+
+    res = minimize_scalar(costo, bounds=(np.log10(D_perp_C) - 1, np.log10(D_perp_C) + 3),
+                          method="bounded", options={"xatol": 1e-6})
+    return 10.0 ** res.x
+
+
 def parte_C(reportar):
     t0 = time.time()
     r, n_ref = referencia_radial(D_perp_C, t_guardar_C)
@@ -280,7 +317,16 @@ def parte_C(reportar):
     reportar(f"   Con dr y dt a la mitad cambia en {abs((var_ref2[-1] - var_ref2[0]) - crec_ref):.1e};"
              f" error L2 entre ambas referencias en t = T:"
              f" {np.sqrt(np.trapezoid((np.interp(r2, r, n_ref[-1]) - n_ref2[-1]) ** 2 * r2, r2) / np.trapezoid(n_ref2[-1] ** 2 * r2, r2)):.1e}")
-    reportar("   D_perp_num = (1/2) pendiente de [var_FEM(t) - var_ref(t)] (ajuste lineal en todo t).")
+    perfil_ref = np.interp(CENTROS_PERFIL, r, n_ref[-1])
+    D_control = ajustar_D(perfil_ref, np.interp(CENTROS_PERFIL, r, n_ref[0]), T_C)
+    reportar("   Dos medidas de D_perp_num:")
+    reportar("   - varianza: (1/2) pendiente de [var_FEM(t) - var_ref(t)] (ajuste lineal en todo t);")
+    reportar("     subestima la difusión numérica cuando n_h tiene lóbulos negativos a los lados")
+    reportar("     del anillo, porque entran con peso negativo y lejos del centro.")
+    reportar("   - ajuste: D_ajuste(FEM) - D_ajuste(referencia), con D_ajuste el D de la referencia 1D")
+    reportar("     que, partiendo del perfil en t = 0, mejor ajusta (mínimos cuadrados) el perfil radial")
+    reportar("     promediado en el ángulo en t = T. Restar el ajuste de la referencia cancela el sesgo")
+    reportar(f"     del método (al aplicarlo a la referencia da D/D_perp - 1 = {D_control / D_perp_C - 1:.1e}).")
     reportar()
 
     filas = []
@@ -288,6 +334,7 @@ def parte_C(reportar):
         t1 = time.time()
         nodes, elements, bnd, _ = malla(h)
         hm = h_medio_malla(nodes, elements)
+        perfil_de = operador_perfil(nodes, elements)
         print(f"   malla h = {h:g}: {len(nodes)} nodos ({time.time() - t1:.1f} s)", flush=True)
         n0 = lambda x, y: anillo(np.hypot(x - xs, y - ys))
         n_T = lambda x, y: np.interp(np.hypot(x - xs, y - ys), r, n_ref[-1])
@@ -299,15 +346,20 @@ def parte_C(reportar):
             var = varianza_radial_fem(nodes, elements, res["N"])
             D_num = np.polyfit(res["t"], var - var_ref, 1)[0] / 2.0
             err = postproc.error_L2_relativo(nodes, elements, res["N"][-1], n_T)
+            # Restar el ajuste de la referencia cancela el sesgo propio del método
+            D_aj = ajustar_D(perfil_de(res["N"][-1]), perfil_de(res["N"][0]), T_C) - D_control
             filas.append({"razon": razon, "D_par": razon * D_perp_C, "h": h, "h_medio": hm,
-                          "nodos": len(nodes), "D_perp_num": D_num,
-                          "D_perp_num_sobre_D_perp": D_num / D_perp_C,
-                          "D_perp_num_sobre_D_par": D_num / (razon * D_perp_C),
+                          "nodos": len(nodes), "min_n": float(res["N"].min()),
+                          "D_perp_num_var": D_num, "D_perp_num_var_sobre_D_perp": D_num / D_perp_C,
+                          "D_perp_num": D_aj, "D_perp_num_sobre_D_perp": D_aj / D_perp_C,
+                          "D_perp_num_sobre_D_par": D_aj / (razon * D_perp_C),
                           "error_L2_rel": err, "crecimiento_var_fem": var[-1] - var[0]})
             print(f"   razón {razon}, h = {h:g}: {time.time() - t1:.1f} s", flush=True)
 
-    reportar(f"   {'Dp/Dt':>6s} {'h':>5s} {'h medio':>8s} {'nodos':>7s} {'Dnum/D_perp':>12s}"
-             f" {'Dnum/D_par':>11s} {'tasa':>6s} {'error L2':>10s} {'tasa':>6s}")
+    reportar(f"   {'Dp/Dt':>6s} {'h':>5s} {'nodos':>7s} {'min n':>10s} {'Dnum/D_perp':>12s}"
+             f" {'Dnum/D_perp':>12s} {'tasa':>6s} {'Dnum/D_par':>11s} {'error L2':>10s} {'tasa':>6s}")
+    reportar(f"   {'':>6s} {'':>5s} {'':>7s} {'':>10s} {'(varianza)':>12s} {'(ajuste)':>12s}"
+             f" {'(ajuste)':>6s} {'(ajuste)':>11s}")
     for razon in razones_C:
         sel = [f for f in filas if f["razon"] == razon]
         hm = np.array([f["h_medio"] for f in sel])
@@ -318,9 +370,9 @@ def parte_C(reportar):
             f["tasa_D_perp_num"], f["tasa_error_L2"] = a, b
             fa = "     -" if np.isnan(a) else f"{a:6.2f}"
             fb = "     -" if np.isnan(b) else f"{b:6.2f}"
-            reportar(f"   {razon:6g} {f['h']:5.2f} {f['h_medio']:8.4f} {f['nodos']:7d}"
-                     f" {f['D_perp_num_sobre_D_perp']:12.4e} {f['D_perp_num_sobre_D_par']:11.4e} {fa}"
-                     f" {f['error_L2_rel']:10.3e} {fb}")
+            reportar(f"   {razon:6g} {f['h']:5.2f} {f['nodos']:7d} {f['min_n']:10.2e}"
+                     f" {f['D_perp_num_var_sobre_D_perp']:12.4e} {f['D_perp_num_sobre_D_perp']:12.4e} {fa}"
+                     f" {f['D_perp_num_sobre_D_par']:11.4e} {f['error_L2_rel']:10.3e} {fb}")
         reportar()
     guardar_csv("12_campo_curvo.csv", filas)
 
@@ -331,6 +383,9 @@ def parte_C(reportar):
         estilo = dict(color=COLOR_RAZON[razon], marker="o", markersize=7,
                       label=rf"$D_\parallel/D_\perp$ = {razon}")
         axes[0].loglog(hm, np.abs([f["D_perp_num_sobre_D_perp"] for f in sel]), **estilo)
+        axes[0].loglog(hm, np.abs([f["D_perp_num_var_sobre_D_perp"] for f in sel]),
+                       color=COLOR_RAZON[razon], marker="o", markersize=6, markerfacecolor="white",
+                       linestyle="--", linewidth=1.2)
         axes[1].loglog(hm, [f["error_L2_rel"] for f in sel], **estilo)
     hm = np.array(sorted({f["h_medio"] for f in filas}, reverse=True))
     for ax, clave in ((axes[0], "D_perp_num_sobre_D_perp"), (axes[1], "error_L2_rel")):
@@ -343,7 +398,8 @@ def parte_C(reportar):
         ax.set_xlabel("h medio de la malla uniforme (adimensional)")
         ax.legend(fontsize=9)
     axes[0].set_ylabel(r"$|D_{\perp,num}| / D_\perp$")
-    axes[0].set_title("Difusión perpendicular numérica (B circular)")
+    axes[0].set_title("Difusión perpendicular numérica (B circular)\n"
+                      "continua: ajuste del perfil; discontinua: varianza", fontsize=11)
     axes[1].set_ylabel(f"Error L2 relativo en t = {T_C:g}")
     axes[1].set_title("Error frente a la referencia radial 1D")
     viz.guardar(fig, RESULTADOS / "12_campo_curvo")
