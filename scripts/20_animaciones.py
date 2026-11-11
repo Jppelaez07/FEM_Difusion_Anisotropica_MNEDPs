@@ -4,7 +4,8 @@
 2. Comparación 2x2 de los casos 1, 2, 3 y 4b, sincronizada.
 3. Crank-Nicolson frente a Euler implícito con la gaussiana estrecha de 05_estabilidad.
 4. Anillo con B circular (parte C de 12_sensibilidad): h = 0.4 frente a h = 0.05, 1000:1.
-Unos 10 s a 20 fps y 1080 px de ancho. Guarda en mp4 si hay ffmpeg; si no, en gif.
+Unos 10 s a 20 fps y 1080 px de ancho. Guarda en mp4 (H.264, ffmpeg de imageio-ffmpeg);
+si falla, en gif.
 Uso: python scripts/20_animaciones.py [casos] [comparacion] [cn] [anillo]   (sin argumentos, todo)
 """
 
@@ -13,6 +14,7 @@ import sys
 import time
 from pathlib import Path
 
+import imageio_ffmpeg
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.animation as animation
@@ -24,6 +26,8 @@ RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 
 from src import casos, fields, mesh, postproc, timestep, viz  # noqa: E402
+
+plt.rcParams["animation.ffmpeg_path"] = imageio_ffmpeg.get_ffmpeg_exe()
 
 FPS, CUADROS = 20, 200                  # 10 s
 ANCHO_PULGADAS, DPI = 10.8, 100         # 1080 px
@@ -45,16 +49,22 @@ def cargar_script(nombre):
 
 
 def guardar_animacion(fig, actualizar, n_cuadros, nombre):
-    if animation.writers.is_available("ffmpeg"):
-        escritor, ext = animation.FFMpegWriter(fps=FPS, bitrate=4000), "mp4"
-    else:
-        escritor, ext = animation.PillowWriter(fps=FPS), "gif"
-    ruta = DIR_ANIM / f"{nombre}.{ext}"
+    """Guarda en mp4 (H.264); si falla, en gif como respaldo."""
     t0 = time.time()
     anim = animation.FuncAnimation(fig, actualizar, frames=n_cuadros, blit=False)
-    anim.save(ruta, writer=escritor, dpi=DPI)
+    ruta = DIR_ANIM / f"{nombre}.mp4"
+    try:
+        escritor = animation.FFMpegWriter(
+            fps=FPS, codec="libx264",
+            extra_args=["-preset", "veryfast", "-crf", "23", "-pix_fmt", "yuv420p"])
+        anim.save(ruta, writer=escritor, dpi=DPI)
+    except Exception as error:                      # sin ffmpeg o error al codificar
+        print(f"  mp4 falló ({error}); se guarda en gif", flush=True)
+        ruta.unlink(missing_ok=True)
+        ruta = DIR_ANIM / f"{nombre}.gif"
+        anim.save(ruta, writer=animation.PillowWriter(fps=FPS), dpi=DPI)
     plt.close(fig)
-    print(f"  {ruta.name}: {ruta.stat().st_size / 1e6:.1f} MB ({time.time() - t0:.0f} s)", flush=True)
+    print(f"  {ruta.name}: {ruta.stat().st_size / 1e6:.2f} MB ({time.time() - t0:.0f} s)", flush=True)
     return ruta
 
 

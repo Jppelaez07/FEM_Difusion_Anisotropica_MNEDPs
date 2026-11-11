@@ -319,10 +319,8 @@ def parte_C(reportar):
              f" {np.sqrt(np.trapezoid((np.interp(r2, r, n_ref[-1]) - n_ref2[-1]) ** 2 * r2, r2) / np.trapezoid(n_ref2[-1] ** 2 * r2, r2)):.1e}")
     perfil_ref = np.interp(CENTROS_PERFIL, r, n_ref[-1])
     D_control = ajustar_D(perfil_ref, np.interp(CENTROS_PERFIL, r, n_ref[0]), T_C)
-    reportar("   Dos medidas de D_perp_num:")
-    reportar("   - varianza: (1/2) pendiente de [var_FEM(t) - var_ref(t)] (ajuste lineal en todo t);")
-    reportar("     subestima la difusión numérica cuando n_h tiene lóbulos negativos a los lados")
-    reportar("     del anillo, porque entran con peso negativo y lejos del centro.")
+    reportar("   Medidas de D_perp_num:")
+    reportar("   - varianza (secundaria): (1/2) pendiente de [var_FEM(t) - var_ref(t)].")
     reportar("   - ajuste: D_ajuste(FEM) - D_ajuste(referencia), con D_ajuste el D de la referencia 1D")
     reportar("     que, partiendo del perfil en t = 0, mejor ajusta (mínimos cuadrados) el perfil radial")
     reportar("     promediado en el ángulo en t = T. Restar el ajuste de la referencia cancela el sesgo")
@@ -356,24 +354,40 @@ def parte_C(reportar):
                           "error_L2_rel": err, "crecimiento_var_fem": var[-1] - var[0]})
             print(f"   razón {razon}, h = {h:g}: {time.time() - t1:.1f} s", flush=True)
 
-    reportar(f"   {'Dp/Dt':>6s} {'h':>5s} {'nodos':>7s} {'min n':>10s} {'Dnum/D_perp':>12s}"
-             f" {'Dnum/D_perp':>12s} {'tasa':>6s} {'Dnum/D_par':>11s} {'error L2':>10s} {'tasa':>6s}")
-    reportar(f"   {'':>6s} {'':>5s} {'':>7s} {'':>10s} {'(varianza)':>12s} {'(ajuste)':>12s}"
-             f" {'(ajuste)':>6s} {'(ajuste)':>11s}")
+    # Exceso de la medida por ajuste respecto al caso isotrópico en la misma malla:
+    # aísla la parte que se debe a D_par (el caso 1:1 contiene el resto del error de P1)
+    iso = {f["h"]: f["D_perp_num"] for f in filas if f["razon"] == 1}
+    for f in filas:
+        f["exceso_ajuste"] = f["D_perp_num"] - iso[f["h"]]
+        f["exceso_sobre_D_perp"] = f["exceso_ajuste"] / D_perp_C
+        f["exceso_sobre_D_par"] = f["exceso_ajuste"] / f["D_par"]
+
+    def tasas(v, hm):
+        v, hm = np.abs(np.asarray(v)), np.asarray(hm)
+        return np.concatenate(([np.nan], np.log(v[:-1] / v[1:]) / np.log(hm[:-1] / hm[1:])))
+
+    ft = lambda v: "     -" if np.isnan(v) else f"{v:6.2f}"
+    reportar("   Medida principal: error L2 relativo frente a la referencia 1D en t = T.")
+    reportar("   Exceso = D_perp_num(ajuste) - D_perp_num(ajuste, caso 1:1) en la misma malla:")
+    reportar("   la parte de la difusión numérica que se debe a D_par.")
+    reportar(f"   {'Dp/Dt':>6s} {'h':>5s} {'nodos':>7s} {'min n':>10s} {'error L2':>10s} {'tasa':>6s}"
+             f" {'exceso/D_perp':>13s} {'tasa':>6s} {'exceso/D_par':>12s} {'Dnum/D_perp*':>12s}")
     for razon in razones_C:
         sel = [f for f in filas if f["razon"] == razon]
-        hm = np.array([f["h_medio"] for f in sel])
-        tasa = lambda v: np.concatenate(([np.nan], np.log(v[:-1] / v[1:]) / np.log(hm[:-1] / hm[1:])))
-        tD = tasa(np.abs([f["D_perp_num"] for f in sel]))
-        tE = tasa(np.array([f["error_L2_rel"] for f in sel]))
-        for f, a, b in zip(sel, tD, tE):
-            f["tasa_D_perp_num"], f["tasa_error_L2"] = a, b
-            fa = "     -" if np.isnan(a) else f"{a:6.2f}"
-            fb = "     -" if np.isnan(b) else f"{b:6.2f}"
+        hm = [f["h_medio"] for f in sel]
+        tE = tasas([f["error_L2_rel"] for f in sel], hm)
+        tX = tasas([f["exceso_ajuste"] for f in sel], hm) if razon != 1 else [np.nan] * len(sel)
+        for f, a, b in zip(sel, tE, tX):
+            f["tasa_error_L2"], f["tasa_exceso"] = a, b
+            exceso = (f"{f['exceso_sobre_D_perp']:13.4e} {ft(b)} {f['exceso_sobre_D_par']:12.4e}"
+                      if razon != 1 else f"{'-':>13s} {'-':>6s} {'-':>12s}")
             reportar(f"   {razon:6g} {f['h']:5.2f} {f['nodos']:7d} {f['min_n']:10.2e}"
-                     f" {f['D_perp_num_var_sobre_D_perp']:12.4e} {f['D_perp_num_sobre_D_perp']:12.4e} {fa}"
-                     f" {f['D_perp_num_sobre_D_par']:11.4e} {f['error_L2_rel']:10.3e} {fb}")
+                     f" {f['error_L2_rel']:10.3e} {ft(a)} {exceso} {f['D_perp_num_var_sobre_D_perp']:12.4e}")
         reportar()
+    reportar("   * Medida secundaria por varianza radial. Está sesgada: cuando n_h tiene lóbulos")
+    reportar("     negativos a los lados del anillo (ver min n), estos entran con peso negativo y")
+    reportar("     lejos del centro, y reducen la varianza; subestima la difusión numérica.")
+    reportar()
     guardar_csv("12_campo_curvo.csv", filas)
 
     fig, axes = plt.subplots(1, 2, figsize=(12.5, 4.8), constrained_layout=True)
@@ -382,13 +396,14 @@ def parte_C(reportar):
         hm = [f["h_medio"] for f in sel]
         estilo = dict(color=COLOR_RAZON[razon], marker="o", markersize=7,
                       label=rf"$D_\parallel/D_\perp$ = {razon}")
-        axes[0].loglog(hm, np.abs([f["D_perp_num_sobre_D_perp"] for f in sel]), **estilo)
-        axes[0].loglog(hm, np.abs([f["D_perp_num_var_sobre_D_perp"] for f in sel]),
-                       color=COLOR_RAZON[razon], marker="o", markersize=6, markerfacecolor="white",
-                       linestyle="--", linewidth=1.2)
-        axes[1].loglog(hm, [f["error_L2_rel"] for f in sel], **estilo)
+        axes[0].loglog(hm, [f["error_L2_rel"] for f in sel], **estilo)
+        if razon != 1:
+            axes[1].loglog(hm, np.abs([f["exceso_sobre_D_perp"] for f in sel]), **estilo)
+            axes[1].loglog(hm, np.abs([f["D_perp_num_var_sobre_D_perp"] for f in sel]),
+                           color=COLOR_RAZON[razon], marker="o", markersize=6,
+                           markerfacecolor="white", linestyle="--", linewidth=1.2)
     hm = np.array(sorted({f["h_medio"] for f in filas}, reverse=True))
-    for ax, clave in ((axes[0], "D_perp_num_sobre_D_perp"), (axes[1], "error_L2_rel")):
+    for ax, clave in ((axes[0], "error_L2_rel"), (axes[1], "exceso_sobre_D_perp")):
         ancla = max(abs(f[clave]) for f in filas if f["h"] == h_C[-1])
         ax.loglog(hm, 0.5 * ancla * (hm / hm[-1]) ** 2, color="#6b7280", linestyle=":",
                   linewidth=1.2, label="pendiente 2")
@@ -397,11 +412,11 @@ def parte_C(reportar):
         ax.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
         ax.set_xlabel("h medio de la malla uniforme (adimensional)")
         ax.legend(fontsize=9)
-    axes[0].set_ylabel(r"$|D_{\perp,num}| / D_\perp$")
-    axes[0].set_title("Difusión perpendicular numérica (B circular)\n"
-                      "continua: ajuste del perfil; discontinua: varianza", fontsize=11)
-    axes[1].set_ylabel(f"Error L2 relativo en t = {T_C:g}")
-    axes[1].set_title("Error frente a la referencia radial 1D")
+    axes[0].set_ylabel(f"Error L2 relativo en t = {T_C:g}")
+    axes[0].set_title("Error frente a la referencia radial 1D (B circular)")
+    axes[1].set_ylabel(r"Difusión numérica / $D_\perp$")
+    axes[1].set_title("Exceso respecto al caso 1:1 (ajuste del perfil)\n"
+                      "discontinua: medida por varianza (sesgada)", fontsize=11)
     viz.guardar(fig, RESULTADOS / "12_campo_curvo")
 
 

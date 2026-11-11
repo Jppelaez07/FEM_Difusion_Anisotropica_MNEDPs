@@ -4,3 +4,4 @@ matplotlib==3.11.2
 gmsh==4.15.2
 meshio==5.3.5
 sympy==1.14.0
+imageio-ffmpeg==0.8.1
