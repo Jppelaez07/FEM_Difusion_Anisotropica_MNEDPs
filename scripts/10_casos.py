@@ -1,6 +1,6 @@
 """Corre los escenarios de src/casos.py e imprime las tablas resumen.
 
-1. Métricas al final y t_99 (flujo de salida >= 0.99 entrada).
+1. Métricas al final y t_99 (dM/dt < 1% de la entrada; el flujo directo como referencia).
 2. Casos 1-3 frente a la solución exacta de la fuente continua en el plano infinito:
    error L2 relativo y razón de aspecto de la isolínea 0.1 max n en varios instantes.
 3. Balance de masa del caso 5.
@@ -54,8 +54,8 @@ def main():
     filas = []
     reportar("1. RESUMEN AL FINAL DE CADA CASO")
     reportar(f"  {'caso':<16s} {'T':>4s} {'masa':>8s} {'salida/entrada':>14s} {'<x^2>':>7s} {'<y^2>':>7s}"
-             f" {'<xy>':>6s} {'aspecto':>7s} {'min n':>10s} {'max n':>7s} {'t_99 directo':>12s}"
-             f" {'t_99 balance':>12s}")
+             f" {'<xy>':>6s} {'aspecto':>7s} {'min n':>10s} {'max n':>7s} {'t_99':>12s}"
+             f" {'(t_99 directo)':>14s}")
     for nombre, r in resultados.items():
         c = casos.config(nombre)
         f = c["fuente"]
@@ -74,9 +74,10 @@ def main():
         sal = f"{fila['salida_sobre_entrada']:14.4f}" if continua else f"{'-':>14s}"
         reportar(f"  {nombre:<16s} {c['T']:4.0f} {fila['masa']:8.3f} {sal} {fila['xx']:7.2f}"
                  f" {fila['yy']:7.2f} {fila['xy']:6.2f} {fila['aspecto']:7.2f} {fila['n_min']:10.2e}"
-                 f" {fila['n_max']:7.4f} {t99d:>12s} {t99b:>12s}")
+                 f" {fila['n_max']:7.4f} {t99b:>12s} {'(' + t99d + ')':>14s}")
     reportar("  salida/entrada = flujo directo -int D grad n . n_ext dividido por Q0 2 pi sigma^2 (en t = T);")
-    reportar("  t_99 = primer t con salida >= 0.99 entrada (directo: flujo directo; balance: int Q - dM/dt);")
+    reportar("  t_99 = primer t con dM/dt < 1% de la entrada (balance); entre paréntesis, como referencia,")
+    reportar("  primer t con flujo directo >= 0.99 entrada;")
     reportar("  aspecto = sqrt(l1/l2) de los momentos; min n = mínimo en toda la simulación.")
     r4b = resultados["caso4b"]
     c4b = casos.config("caso4b")

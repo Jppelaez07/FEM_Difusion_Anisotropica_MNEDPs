@@ -1,7 +1,7 @@
 """Figuras finales de los escenarios (requiere correr antes scripts/10_casos.py).
 
 1. Panel 2x3 con el estado final de cada caso, misma escala de colores e isolíneas.
-2. Masa total y flujo de salida / entrada contra el tiempo, con t_99.
+2. Masa total y salida / entrada (por balance) contra el tiempo, con t_99.
 3. Balance de masa del caso 5 (Dirichlet y Neumann).
 4. Casos 1-3 frente a la solución exacta en el plano infinito.
 Guarda PNG y PDF en results/casos/.
@@ -83,9 +83,9 @@ def figura_masa_flujo(datos):
         f = d["config"]["fuente"]
         if f["t_apagado"] is None:
             entrada = f["Q0"] * 2 * np.pi * f["sigma"] ** 2
-            axes[1].plot(d["t"], d["flujo_directo"] / entrada, **estilo)
-            if not np.isnan(d["t_99_directo"]):
-                axes[1].plot(d["t_99_directo"], 0.99, "o", color=estilo["color"], markersize=7,
+            axes[1].plot(d["t"][1:], d["flujo_balance"][1:] / entrada, **estilo)
+            if not np.isnan(d["t_99_balance"]):
+                axes[1].plot(d["t_99_balance"], 0.99, "o", color=estilo["color"], markersize=7,
                              markeredgecolor="white", zorder=4)
     c = datos["caso1"]["config"]["fuente"]
     t = datos["caso1"]["t"]
@@ -96,7 +96,7 @@ def figura_masa_flujo(datos):
     axes[1].axhline(0.99, color="#9ca3af", linestyle=":", linewidth=1.5)
     axes[1].annotate("0.99 (puntos: t_99)", (2, 0.99), xytext=(0, 4), textcoords="offset points",
                      fontsize=9, color="#6b7280")
-    axes[1].set_title(r"Flujo directo de salida / entrada ($Q_0\,2\pi\sigma_Q^2$), fuente continua")
+    axes[1].set_title(r"Salida ($\int Q\,d\Omega - dM/dt$) / entrada ($Q_0\,2\pi\sigma_Q^2$), fuente continua")
     axes[1].set_ylabel("Salida / entrada")
     for ax in axes:
         ax.set_xlabel("t (adimensional)")

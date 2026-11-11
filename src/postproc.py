@@ -167,6 +167,30 @@ def vector_flujo_frontera(nodes, elements, D_func):
     return np.bincount(elements[e].ravel(), weights=w.ravel(), minlength=len(nodes))
 
 
+def momentos_cuadratura(nodes, elements, N):
+    """Como momentos(), pero integrando n_h (x - xc)^2 etc. con la cuadratura de 6 puntos.
+
+    Es exacto para la solución P1 (no interpola (x - xc)^2), útil cuando la
+    varianza cambia muy poco y se necesita su pendiente con precisión.
+    """
+    detJ, _, _ = assembly.geometria(nodes, elements)
+    xq = np.einsum("qm,emi->eqi", CUAD_BARI, nodes[elements])       # (E, 6, 2)
+    pesos = (detJ / 2.0)[:, None] * CUAD_PESOS                       # (E, 6)
+    N = np.atleast_2d(np.asarray(N, dtype=float))
+    claves = ("masa", "xc", "yc", "xx", "yy", "xy")
+    salida = {k: np.empty(len(N)) for k in claves}
+    for s, Ns in enumerate(N):
+        w = pesos * (Ns[elements] @ CUAD_BARI.T)                     # n_h por peso
+        m = w.sum()
+        xc, yc = (w * xq[..., 0]).sum() / m, (w * xq[..., 1]).sum() / m
+        dx, dy = xq[..., 0] - xc, xq[..., 1] - yc
+        valores = (m, xc, yc, (w * dx * dx).sum() / m, (w * dy * dy).sum() / m,
+                   (w * dx * dy).sum() / m)
+        for k, v in zip(claves, valores):
+            salida[k][s] = v
+    return salida
+
+
 def angulo_principal(mom):
     """Ángulo del eje mayor de la nube, en grados."""
     return 0.5 * np.degrees(np.arctan2(2.0 * mom["xy"], mom["xx"] - mom["yy"]))

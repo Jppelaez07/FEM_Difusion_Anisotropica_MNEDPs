@@ -26,10 +26,10 @@ COMUN = {
     "bc": "dirichlet",
     "theta": 1.0,
     "dt": 0.05,
-    "T": 200.0,
+    "T": 300.0,
     "n_guardar": 50,
-    "t_comparacion": [5.0, 10.0, 20.0, 40.0, 100.0, 200.0],   # instantes extra guardados
-    "fraccion_estacionario": 0.99,     # t_99: flujo de salida >= 0.99 * entrada
+    "t_comparacion": [5.0, 10.0, 20.0, 40.0, 100.0, 200.0, 300.0],   # instantes extra guardados
+    "fraccion_estacionario": 0.99,     # t_99: dM/dt < (1 - 0.99) * entrada
 }
 
 CASOS = {
@@ -164,15 +164,17 @@ def correr_caso(c, guardar=True):
         mom = postproc.momentos(nodes, M, N_g)
         aspecto = postproc.razon_aspecto(mom)
 
-    # t_99: primer instante con flujo de salida >= fraccion * entrada (solo fuente continua)
+    # t_99 (solo fuente continua). Criterio principal, por balance: dM/dt < (1 - fraccion) * entrada.
+    # Referencia: flujo directo de salida >= fraccion * entrada.
     t_99 = {"directo": np.nan, "balance": np.nan}
     if f["t_apagado"] is None:
         entrada_total = f["Q0"] * 2.0 * np.pi * f["sigma"] ** 2
-        umbral = c["fraccion_estacionario"] * entrada_total
-        for clave, flujo, tt in (("directo", r["flujo_directo"], r["t"]),
-                                 ("balance", flujo_balance, r["t"][1:])):
-            ok = np.flatnonzero(flujo >= umbral)
-            t_99[clave] = float(tt[ok[0]]) if ok.size else np.nan
+        fr = c["fraccion_estacionario"]
+        dMdt = np.diff(r["masa"]) / dt_real
+        for clave, ok, tt in (("balance", dMdt < (1.0 - fr) * entrada_total, r["t"][1:]),
+                              ("directo", r["flujo_directo"] >= fr * entrada_total, r["t"])):
+            k = np.flatnonzero(ok)
+            t_99[clave] = float(tt[k[0]]) if k.size else np.nan
 
     salida = {
         "nombre": c["nombre"],
