@@ -5,8 +5,8 @@ Uso:
   python scripts/run_all.py --rapido   prueba en pocos minutos, resultados en results_rapido/
 
 El modo rápido no corre las animaciones, omite las mallas de h = 0.05 en
-12_sensibilidad.py y la de N = 401 en 06_pakmor.py y 07_anillo.py, y usa T = 100
-en 10_casos.py. Sus resultados son reducidos y no deben usarse en el informe.
+12_sensibilidad.py, la de N = 401 en 06_pakmor.py y 07_anillo.py y la de N = 257
+en 08_sovinec.py, y usa T = 100 en 10_casos.py. Sus resultados son reducidos y no deben usarse en el informe.
 La salida de cada script se guarda en <carpeta>/logs/.
 """
 
@@ -27,6 +27,7 @@ SCRIPTS = [
     "05_estabilidad.py",      # estabilidad del explícito y oscilaciones de Crank-Nicolson
     "06_pakmor.py",           # prueba 3.1 de Pakmor et al. (2016)
     "07_anillo.py",           # prueba 3.2 de Pakmor et al. (2016): cuña en campo circular
+    "08_sovinec.py",          # prueba 3.4 de Pakmor et al. (2016): prueba de Sovinec
     "10_casos.py",            # escenarios de simulación
     "11_figuras_casos.py",    # figuras de los escenarios (usa 10_casos)
     "12_sensibilidad.py",     # sensibilidad a la anisotropía y difusión numérica

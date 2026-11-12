@@ -1,0 +1,59 @@
+PRUEBA 3.4 DE PAKMOR ET AL. (2016): PRUEBA DE SOVINEC (DIFUSIÓN PERPENDICULAR NUMÉRICA)
+  Dominio [-0.5, 0.5]^2, B = (cos(pi x) sin(pi y), -sin(pi x) cos(pi y)), D_par = 1,
+  Q = 2 pi^2 psi, psi = cos(pi x) cos(pi y), Dirichlet u = 0.
+  max |B . grad psi| en una rejilla de 801 x 801: 3.3e-16 (las líneas de B son curvas de nivel de psi)
+  max |psi| en la frontera: 6.1e-17 (la condición u = 0 es compatible)
+  B = 0 en el centro y en las cuatro esquinas; donde |B| < 1e-14 el código usa D = D_perp I.
+  En la malla estructurada 51 x 51, 0 baricentros caen en |B| < 1e-14 (|B| mínimo en un baricentro: 2.96e-02),
+  así que con D_perp = 0 ningún elemento queda con D = 0; los cercanos al centro y a las
+  esquinas tienen |B| pequeño pero dirección definida.
+  Estado estacionario: K_II N = F_I (spsolve). Estimadores de kappa_num:
+    centro: 1 / u_h(0, 0);  mín. cuadrados: int psi^2 / int psi u_h;  valor propio: lambda_min(K, M) / (2 pi^2)
+
+1. CALIBRACIÓN EN LA MALLA ESTRUCTURADA 51 x 51 (D_perp > 0, exacta u = psi / D_perp)
+   D_perp u_h(0,0) D_perp   error L1  L1 rel.   error L2  L2 rel.  kappa_num (centro)  kappa_num (mín. cuad.)
+    1e-02        0.988787  8.295e-01 2.05e-02  1.092e+00 2.18e-02          1.1341e-04              2.2139e-04
+    1e-03        0.843810  6.572e+01 1.62e-01  8.577e+01 1.72e-01          1.8510e-04              2.0618e-04
+  kappa_num inferido = (estimador) - D_perp: con D_perp > 0 debe coincidir con la medición
+  directa con D_perp = 0 (tabla 2) si la difusión numérica no depende de D_perp.
+
+2. MEDICIÓN CON D_perp = 0 (kappa_num / kappa_par; tasas con h = 1/(N-1))
+  malla               N  nodos   u_h(0,0)     centro  tasa mín. cuad.  tasa val. propio  residuo
+  estructurada       17    289     559.84  1.786e-03     -  1.885e-03     -   1.878e-03  2.6e-12
+  estructurada       33   1089    2120.15  4.717e-04  1.92  4.752e-04  1.99   4.738e-04  3.8e-11
+  estructurada       51   2601    5099.92  1.961e-04  1.97  1.946e-04  2.00   1.940e-04  2.7e-10
+  estructurada       65   4225    8318.01  1.202e-04  1.98  1.187e-04  2.00   1.183e-04  6.9e-10
+  estructurada      129  16641   33099.13  3.021e-05  1.99  2.956e-05  2.01   2.945e-05  1.2e-08
+  estructurada      257  66049  132376.67  7.554e-06  2.00  7.360e-06  2.01   7.333e-06  1.9e-07
+
+  no estructurada    17    342    1075.18  9.301e-04     -  9.464e-04     -   9.446e-04  4.8e-12
+  no estructurada    33   1265    4238.83  2.359e-04  1.98  2.402e-04  1.98   2.400e-04  7.8e-11
+  no estructurada    51   3019   10692.54  9.352e-05  2.07  9.487e-05  2.08   9.484e-05  5.0e-10
+  no estructurada    65   4887   18004.75  5.554e-05  2.11  5.618e-05  2.12   5.617e-05  1.4e-09
+  no estructurada   129  19237   74895.70  1.335e-05  2.06  1.344e-05  2.06   1.344e-05  2.4e-08
+  no estructurada   257  76367  309018.08  3.236e-06  2.04  3.247e-06  2.05   3.247e-06  4.0e-07
+
+  K_II es invertible en todas las mallas (residuo de spsolve pequeño): la difusión numérica no es nula.
+
+3. EVOLUCIÓN TEMPORAL (malla estructurada 51 x 51, theta = 1, u0 = 0)
+  kappa_num = 1.9608e-04; tiempo de equilibrio estimado 5 / (2 pi^2 kappa_num) = 1291.8
+  dt = 1.292, 1000 pasos hasta t = 1291.8
+  u_h(0,0,t) / u_h,estacionario(0,0) en t = 1291.8: 0.99284 (esperado ~ 1 - exp(-5) = 0.99326)
+  max |N(t = 1291.8) - N_estacionario| / max |N_estacionario| = 7.16e-03
+
+4. COMPARACIÓN CON EL ARTÍCULO
+  estructurada     centro     : kappa_num ~ N^-2.01
+  estructurada     mín. cuad. : kappa_num ~ N^-2.04
+  no estructurada  centro     : kappa_num ~ N^-2.09
+  no estructurada  mín. cuad. : kappa_num ~ N^-2.09
+  Con 16 x 16 celdas (N = 17) en la malla estructurada: kappa_num / kappa_par = 1.79e-03 (centro)
+  Pakmor et al. (Fig. 10) obtienen kappa_num / kappa_par ~ N^-1.85, por debajo de 1e-2
+  con 16^2 celdas. La comparación es de tendencia: los métodos numéricos son distintos.
+
+  Relación con la Parte C de 12_sensibilidad.py: allí, con un anillo de B circular, la
+  difusión perpendicular numérica no tenía una definición única (la varianza radial y el
+  ajuste del perfil daban valores distintos). Aquí el problema está construido para que
+  el estado estacionario sea psi / kappa con cualquier kappa perpendicular, así que con
+  D_perp = 0 el equilibrio mide directamente kappa_num, y los tres estimadores (centro,
+  mínimos cuadrados y valor propio) se pueden comparar entre sí.
+
