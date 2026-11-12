@@ -55,21 +55,22 @@ python -m pip install -r requirements.txt
 Hay dos formas de correr todo el proyecto. Ambas imprimen el tiempo de cada script y un
 resumen OK/FALLO, y guardan la salida completa de cada script en `<carpeta>/logs/`.
 
-**Corrida completa** (unos 45 minutos; las animaciones toman la mayor parte). Genera todos los
+**Corrida completa** (cerca de una hora; las animaciones toman más de la mitad). Genera todos los
 resultados del informe en `results/`:
 
 ```
 python scripts/run_all.py
 ```
 
-**Corrida rápida** (unos 5 minutos), para probar que el código funciona:
+**Corrida rápida** (unos 8 minutos), para probar que el código funciona:
 
 ```
 python scripts/run_all.py --rapido
 ```
 
 En este modo no se generan las animaciones, `12_sensibilidad.py` omite las mallas de h = 0.05,
-`06_pakmor.py` omite la malla de N = 401 y `10_casos.py` usa T = 100 en lugar de 300. Los resultados son reducidos y se guardan en
+`06_pakmor.py` y `07_anillo.py` omiten la malla de N = 401 y `10_casos.py` usa T = 100 en lugar
+de 300. Los resultados son reducidos y se guardan en
 `results_rapido/`, de modo que nunca sobrescriben los de `results/`. Los scripts que cambian
 en este modo lo indican al inicio con "MODO RÁPIDO: resultados reducidos, no usar en el informe".
 
@@ -115,6 +116,7 @@ results_rapido/  resultados reducidos del modo rápido (no se versiona)
 | `04_gauss.py` | Comparación con la gaussiana anisotrópica analítica: error L2 en el tiempo y cortes a lo largo y a través de B | `04_gauss_error.*`, `04_gauss_cortes.*`, `04_gauss.txt` |
 | `05_estabilidad.py` | Paso crítico del esquema explícito (dt_c ~ h²) y oscilaciones de Crank-Nicolson frente a Euler implícito | `05_estabilidad_normas.*`, `05_estabilidad_dtc.*`, `05_oscilaciones.*`, `05_estabilidad.txt` |
 | `06_pakmor.py` | Prueba 3.1 de Pakmor et al. (2016), difusión isotrópica de un perfil gaussiano en [-0.5, 0.5]²: caso base 51 x 51 y convergencia del error L1 y L2 en mallas estructuradas y no estructuradas (N = 26 a 401), theta = 0.5 y theta = 1 | `06_pakmor_mapas.*`, `06_pakmor_cortes.*`, `06_pakmor_convergencia.*` (png, pdf), `06_pakmor_caso_base.csv`, `06_pakmor_convergencia.csv`, `06_pakmor.txt` |
+| `07_anillo.py` | Prueba 3.2 de Pakmor et al. (2016) (Parrish y Stone, 2005): difusión de una cuña en un campo circular con D_perp = 0, Neumann. Errores L1 y L2 en t = 10 y t = 200, conservación de la energía y principio del máximo, en mallas estructuradas y no estructuradas (N = 51 a 401) | `07_anillo_mapas_t10.*`, `07_anillo_mapas_t200.*`, `07_anillo_perfil_angular.*`, `07_anillo_perfil_radial.*`, `07_anillo_convergencia.*`, `07_anillo_energia.*` (png, pdf), `07_anillo_convergencia.csv`, `07_anillo.txt` |
 | `10_casos.py` | Escenarios 1 a 5: masa, flujo por la frontera, momentos, razón de aspecto, t_99, comparación con la solución exacta de la fuente continua y balance de masa | `casos/<caso>.npz`, `casos/resumen.csv`, `casos/resumen.txt`, `casos/comparacion_exacta.csv` |
 | `11_figuras_casos.py` | Figuras de los escenarios | `casos/estados_finales.*`, `casos/masa_flujo.*`, `casos/balance_caso5.*`, `casos/comparacion_exacta.*` |
 | `12_sensibilidad.py` | A: barrido de D_par/D_perp. B: difusión perpendicular numérica con B uniforme. C: difusión numérica con B circular frente a una referencia radial 1D | `12_barrido_anisotropia.*`, `12_difusion_numerica.*`, `12_campo_curvo.*`, `12_sensibilidad.txt`, `12_campo_curvo.txt` |

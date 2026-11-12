@@ -1,0 +1,67 @@
+PRUEBA 3.2 DE PAKMOR ET AL. (2016): CUÑA EN UN CAMPO MAGNÉTICO CIRCULAR
+  Dominio [-1, 1]^2, B circular en el origen, D_par = 0.01, D_perp = 0, Q = 0, Neumann, theta = 1
+  u0 = 12 en 0.5 < r < 0.7, |phi| < pi/12; 10 en el resto (interpolada en los nodos)
+  Corridas: T = 10 con dt = 0.01, T = 200 con dt = 0.1
+  Solución exacta en t = 10: u = 10 + erfc((phi - pi/12) r / sqrt(4 D_par t)) - erfc((phi + pi/12) r / sqrt(4 D_par t)) en el anillo.
+    En t -> 0 reproduce u0: max |u - u0| lejos de los bordes de la cuña = 0.0e+00
+    En phi = 0, r = 0.6, t = 10: u = 10.549184 (> 10)
+    Aporte de la cola que da la vuelta al anillo (imágenes periódicas) en t = 10: 1.1e-03
+  Solución exacta en t = 200: u = 10 + 1/6 en el anillo (mezcla angular completa).
+    La solución periódica exacta en t = 200 se aparta de 10 + 1/6 como máximo en 5.6e-03
+
+CONVERGENCIA EN t = 10 (tasas con h = 2/(N-1))
+  malla               N   nodos    error L1  tasa    error L2  tasa     min u     max u  var. E max
+  estructurada       51    2601  5.7827e-02     -  8.1280e-02     -   9.89805  12.04510    4.44e-15
+  estructurada      101   10201  4.0402e-02  0.52  6.6386e-02  0.29   9.90460  12.04305    3.66e-15
+  estructurada      201   40401  2.9881e-02  0.44  5.5933e-02  0.25   9.87463  12.10952    1.33e-15
+  estructurada      401  160801  2.0914e-02  0.51  4.6488e-02  0.27   9.86534  12.13890    3.02e-13
+  no estructurada    51    3019  4.9529e-02     -  7.5928e-02     -   9.88479  12.14271    2.11e-15
+  no estructurada   101   11827  3.9045e-02  0.34  6.5210e-02  0.22   9.87701  12.11947    1.55e-15
+  no estructurada   201   46681  2.5988e-02  0.59  5.2390e-02  0.32   9.85789  12.12910    2.66e-15
+  no estructurada   401  185708  1.9396e-02  0.42  4.5133e-02  0.22   9.89200  12.10381    1.38e-14
+
+CONVERGENCIA EN t = 200 (tasas con h = 2/(N-1))
+  malla               N   nodos    error L1  tasa    error L2  tasa     min u     max u  var. E max
+  estructurada       51    2601  1.3906e-01     -  9.1625e-02     -   9.90952  12.00826    7.54e-14
+  estructurada      101   10201  1.0049e-01  0.47  7.3366e-02  0.32   9.92482  12.00907    2.29e-13
+  estructurada      201   40401  6.5071e-02  0.63  5.5653e-02  0.40   9.89936  12.06458    2.00e-13
+  estructurada      401  160801  4.6731e-02  0.48  4.6494e-02  0.26   9.90931  12.08002    6.38e-12
+  no estructurada    51    3019  1.1371e-01     -  8.0128e-02     -   9.90000  12.08889    1.29e-14
+  no estructurada   101   11827  7.3856e-02  0.62  5.9813e-02  0.42   9.89818  12.07074    2.07e-14
+  no estructurada   201   46681  4.9627e-02  0.57  4.8071e-02  0.32   9.90470  12.07528    1.49e-13
+  no estructurada   401  185708  4.0403e-02  0.30  4.2658e-02  0.17   9.90552  12.06366    5.30e-13
+
+PRINCIPIO DEL MÁXIMO (en toda la simulación) Y CONSERVACIÓN DE LA ENERGÍA
+  descenso = (10 - min u) / (12 - 10) en %; área = fracción del dominio con u < 9.98 en t = T
+  (9.98 = un descenso de más del 1% de la amplitud; contar u < 10 mediría oscilaciones de redondeo)
+  malla               N    T     min u     max u descenso %   área %  var. E max
+  estructurada       51   10   9.89805  12.04510      5.097    1.374    4.44e-15
+  estructurada      101   10   9.90460  12.04305      4.770    0.646    3.66e-15
+  estructurada      201   10   9.87463  12.10952      6.268    0.433    1.33e-15
+  estructurada      401   10   9.86534  12.13890      6.733    0.306    3.02e-13
+  no estructurada    51   10   9.88479  12.14271      5.760    1.353    2.11e-15
+  no estructurada   101   10   9.87701  12.11947      6.150    0.930    1.55e-15
+  no estructurada   201   10   9.85789  12.12910      7.106    0.715    2.66e-15
+  no estructurada   401   10   9.89200  12.10381      5.400    0.515    1.38e-14
+  estructurada       51  200   9.90952  12.00826      4.524    1.738    7.54e-14
+  estructurada      101  200   9.92482  12.00907      3.759    0.000    2.29e-13
+  estructurada      201  200   9.89936  12.06458      5.032    0.000    2.00e-13
+  estructurada      401  200   9.90931  12.08002      4.535    0.000    6.38e-12
+  no estructurada    51  200   9.90000  12.08889      5.000    0.000    1.29e-14
+  no estructurada   101  200   9.89818  12.07074      5.091    0.000    2.07e-14
+  no estructurada   201  200   9.90470  12.07528      4.765    0.000    1.49e-13
+  no estructurada   401  200   9.90552  12.06366      4.724    0.000    5.30e-13
+
+COMPARACIÓN CON EL ARTÍCULO
+  t = 10, estructurada: pendiente del error L1 contra N = 0.49
+  t = 10, no estructurada: pendiente del error L1 contra N = 0.47
+  t = 200, estructurada: pendiente del error L1 contra N = 0.54
+  t = 200, no estructurada: pendiente del error L1 contra N = 0.51
+  Pakmor et al. reportan tasas de convergencia del error L1 de 0.55 y 0.7 para este
+  problema: la solución exacta es discontinua en r = 0.5 y r = 0.7 (D_perp = 0), así que
+  ningún método de bajo orden converge con orden 1 o 2.
+  Mínimo de u en todas las corridas: 9.85789. Con limitador, el artículo mantiene u >= 10;
+  sin limitador, reporta valores por debajo de 10 de unos pocos por ciento. Este código no
+  tiene limitador (Galerkin P1 estándar), así que se espera lo segundo.
+  La energía 1^T M N se conserva hasta el redondeo con Neumann (1^T K = 0).
+

@@ -41,9 +41,12 @@ def campo_circular(xc, yc):
 # --- Tensor de difusión ---
 
 def tensor_difusion(Bx, By, D_par, D_perp):
-    """D = D_perp I + (D_par - D_perp) b b^T, con b = B/|B|. Retorna (P, 2, 2)."""
-    if D_par <= 0 or D_perp <= 0:
-        raise ValueError("Los coeficientes de difusión deben ser positivos")
+    """D = D_perp I + (D_par - D_perp) b b^T, con b = B/|B|. Retorna (P, 2, 2).
+
+    Se exige D_par > 0 y D_perp >= 0 (D_perp = 0 es difusión solo a lo largo de B).
+    """
+    if D_par <= 0 or D_perp < 0:
+        raise ValueError("Se requiere D_par > 0 y D_perp >= 0")
     Bx = np.atleast_1d(np.asarray(Bx, dtype=float))
     By = np.atleast_1d(np.asarray(By, dtype=float))
     norma = np.hypot(Bx, By)
