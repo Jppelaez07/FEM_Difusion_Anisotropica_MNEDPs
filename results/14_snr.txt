@@ -1,0 +1,87 @@
+ESCENARIO FÍSICO: RAYOS CÓSMICOS QUE ESCAPAN DE UN REMANENTE DE SUPERNOVA
+(basado en Nava y Gabici, 2013)
+UNIDADES (se trabaja en pc y kyr)
+  1 pc = 3.0857e+18 cm;  1 kyr = 3.1560e+10 s
+  D_par = 1e+29 cm^2/s = 331.46 pc^2/kyr
+  sigma0 = 5 pc;  dt = 0.02 kyr;  T = 10 kyr;  tiempo de difusión de la fuente sigma0^2 / D_par = 0.075 kyr
+  B0 = 3 microG no entra en el modelo: solo importa la dirección de B a través de D.
+
+VERIFICACIÓN (caso base eps = 0.01, D_perp = 3.315 pc^2/kyr)
+  Valor exacto máximo en la frontera (t <= 10 kyr), relativo a n_max = 1:
+    eps = 1: 6.9e-04;  eps = 0.1: 1.2e-06;  eps = 0.01: 3.2e-06;  eps = 0.001: 5.5e-06
+    Con eps = 1 la frontera y = +-150 pc no es despreciable (sigma_y ~ 82 pc en t = 10 kyr):
+    esa corrida del barrido pierde algo de masa por la frontera.
+
+  malla                    nodos t (kyr)   L1 rel.   L2 rel.     <x^2>       teo    <y^2>      teo  aspecto     teo
+  estructurada 281x121     34001       1  2.67e-02  2.55e-02     689.0     687.9    32.67    31.63    4.592   4.664
+  estructurada 281x121     34001       5  1.69e-02  1.73e-02    3340.6    3339.6    59.19    58.15    7.513   7.579
+  estructurada 281x121     34001      10  1.16e-02  1.21e-02    6650.8    6654.2    92.33    91.29    8.487   8.538
+  estructurada 561x241    135201       1  8.31e-03  7.07e-03     688.2     687.9    31.89    31.63    4.645   4.664
+  estructurada 561x241    135201       5  4.01e-03  3.86e-03    3339.8    3339.6    58.41    58.15    7.562   7.579
+  estructurada 561x241    135201      10  2.66e-03  2.65e-03    6650.0    6654.2    91.55    91.29    8.523   8.538
+  gmsh 5/1 (r = 30)        14718       1  1.21e-02  9.43e-03     687.9     687.9    31.78    31.63    4.653   4.664
+  gmsh 5/1 (r = 30)        14718       5  5.41e-02  4.11e-02    3338.6    3339.6    58.67    58.15    7.544   7.579
+  gmsh 5/1 (r = 30)        14718      10  6.61e-02  5.19e-02    6647.8    6654.2    92.51    91.29    8.477   8.538
+  <x^2>, <y^2> en pc^2; teórico: sigma0^2 + 2 D t; aspecto = sqrt(<x^2>/<y^2>).
+
+  Densidad en las nubes en t = 10 kyr según la malla (exacta: n_A = 2.6582e-02, n_B = 3.6279e-08)
+    estructurada 281x121   n_A = 2.6350e-02 (-0.9%)   n_B = 7.3038e-09 (-80%)
+    estructurada 561x241   n_A = 2.6540e-02 (-0.2%)   n_B = 2.9306e-08 (-19%)
+    gmsh 5/1 (r = 30)      n_A = 2.5569e-02 (-3.8%)   n_B = 1.7502e-06 (+4724%)
+    La nube B está en la cola profunda de la gaussiana perpendicular (n_B / pico ~ 1e-6):
+    un error absoluto pequeño es un error relativo grande allí.
+
+BARRIDO DE eps = D_perp / D_par (malla estructurada 281x121, t = 10 kyr)
+     eps  aspecto      teo      pico    exacto        n_A     exacta        n_B     exacta   n_A/n_B
+       1    1.295    1.000 3.754e-03 3.757e-03  3.109e-03  3.114e-03  3.082e-03  3.114e-03  1.01e+00
+     0.1    3.107    3.110 1.168e-02 1.168e-02  9.680e-03  9.684e-03  1.903e-03  1.899e-03  5.09e+00
+    0.01    8.487    8.538 3.175e-02 3.208e-02  2.635e-02  2.658e-02  7.304e-09  3.628e-08  3.61e+06
+   0.001   14.268   14.505 5.340e-02 5.449e-02  4.449e-02  4.516e-02  5.322e-18  3.740e-19  8.36e+15
+  Nube A en (50, 0) pc (a lo largo de B); nube B en (0, 50) pc.
+
+COEFICIENTE ISOTRÓPICO INFERIDO (D_iso / D_par) A PARTIR DE LA DENSIDAD EN t = 10 kyr
+  Con difusión isotrópica, n(r = 50 pc, t = 10 kyr) tiene un máximo como función de D:
+  n* = 7.358e-03 en D* = 0.1848 D_par = 1.85e+28 cm^2/s.
+  Si la densidad observada supera n*, ningún D isotrópico la reproduce; si es menor, hay dos
+  raíces: la pequeña (el frente todavía no llega a la nube, n sube) y la grande (el frente ya
+  pasó, n baja). La física es la que tiene el mismo signo de dn/dt que la simulación.
+     eps nube          n      dn/dt  raíz pequeña  raíz grande    física  D_iso (cm^2/s)
+       1    A  3.109e-03  -2.57e-04     6.038e-02    1.002e+00 1.002e+00        1.00e+29
+       1    B  3.082e-03  -2.66e-04     6.008e-02    1.013e+00 1.013e+00        1.01e+29
+     0.1    A  9.680e-03  -7.68e-04             -            -         -    sin solución
+     0.1    B  1.903e-03   1.47e-04     4.795e-02    1.779e+00 4.795e-02        4.79e+27
+    0.01    A  2.635e-02  -1.77e-03             -            -         -    sin solución
+    0.01    B  7.304e-09   1.03e-08     6.884e-03    5.163e+05 6.884e-03        6.88e+26
+   0.001    A  4.449e-02  -1.88e-03             -            -         -    sin solución
+   0.001    B  5.322e-18   3.68e-18     9.977e-04            - 9.977e-04        9.98e+25
+  Para la nube B, D_iso físico usando la densidad exacta en vez de la numérica:
+    eps = 1: 1.000e+00;  eps = 0.1: 4.790e-02;  eps = 0.01: 8.020e-03;  eps = 0.001: 6.905e-04
+    Con eps pequeño la densidad numérica en B tiene un error relativo grande; D_iso depende de
+    ella de forma logarítmica, así que el valor inferido cambia menos (hasta ~45% con
+    eps = 0.001), sin alterar la conclusión: desde B se infiere un D_iso del orden de D_perp.
+
+DISCUSIÓN
+  Con eps = 0.01, en t = 10 kyr la nube A (a lo largo de B) recibe n_A / n_B = 3.6e+06 veces más rayos
+  cósmicos que la B (perpendicular), aunque están a la misma distancia de la fuente.
+  La densidad en A (2.63e-02) supera el máximo que permite cualquier difusión isotrópica
+  (7.36e-03): un observador que suponga isotropía no puede explicarla con ningún D;
+  lo más cercano es D* = 0.185 D_par, y aun así se queda 3.6 veces corto.
+  Para la nube B el D isotrópico físico es 6.884e-03 D_par: interpretar la
+  densidad perpendicular con difusión isotrópica da un coeficiente muy distinto del real.
+  Esto concuerda con la conclusión del artículo: con más anisotropía, la interpretación
+  isotrópica da coeficientes muy distintos del real, porque los rayos cósmicos se concentran
+  en el tubo de flujo que pasa por la fuente.
+  Diferencias de modelo con el artículo (la comparación es cualitativa):
+  - Ellos usan D_perp = 0 con deambulación de las líneas de campo (difusión compuesta,
+    <dx_perp^2> ~ sqrt(t), subdifusiva); aquí D_perp es efectiva y <dy^2> ~ t.
+  - Ellos trabajan en 3D, con D(E) e inyección que depende del tiempo; aquí, 2D, una sola
+    energía y un pulso instantáneo. En 2D la densidad decae como 1/t y no como t^(-3/2),
+    así que los valores numéricos de D_iso no son trasladables al caso 3D.
+  Resolución: con eps = 0.001, sigma_y = 5.6 pc en t = 10 kyr, solo unos 2 nodos por sigma en la malla base (h = 2.5 pc).
+  Con eps = 1 la frontera absorbente en y = +-150 pc recorta la nube (sigma ~ 82 pc), y por eso
+  la razón de aspecto numérica es mayor que 1.
+  La malla de gmsh está refinada solo alrededor de la fuente (r = 30 pc); la nube sale de esa
+  zona a lo largo de B y en los elementos de h = 5 pc su ancho perpendicular (~9.5 pc) queda
+  mal resuelto, por eso su error crece con el tiempo. Como en el halo (13_halo.py), lo que
+  importa es resolver la dirección perpendicular en todo el tubo de flujo.
+
