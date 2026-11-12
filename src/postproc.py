@@ -44,6 +44,27 @@ def errores_L2_H1(nodes, elements, N, n_exacta, grad_exacta):
     return err_L2, err_H1
 
 
+def _integrales_L1(nodes, elements, N, n_exacta):
+    """(int |n_h - n| dOmega, int |n| dOmega) con la cuadratura de 6 puntos."""
+    detJ, _, _ = assembly.geometria(nodes, elements)
+    xq = np.einsum("qm,emi->eqi", CUAD_BARI, nodes[elements])
+    nh = np.asarray(N, dtype=float)[elements] @ CUAD_BARI.T
+    ne = n_exacta(xq[..., 0], xq[..., 1])
+    pesos = (detJ / 2.0)[:, None] * CUAD_PESOS
+    return np.sum(pesos * np.abs(nh - ne)), np.sum(pesos * np.abs(ne))
+
+
+def error_L1(nodes, elements, N, n_exacta):
+    """Error en norma L1: int |n_h - n| dOmega."""
+    return _integrales_L1(nodes, elements, N, n_exacta)[0]
+
+
+def error_L1_relativo(nodes, elements, N, n_exacta):
+    """Error L1 relativo: int |n_h - n| dOmega / int |n| dOmega."""
+    err, norma = _integrales_L1(nodes, elements, N, n_exacta)
+    return err / norma
+
+
 def evaluar_en_puntos(nodes, elements, N, xp, yp):
     """Valor de la solución FEM en puntos arbitrarios (NaN fuera de la malla)."""
     tri = Triangulation(nodes[:, 0], nodes[:, 1], elements)

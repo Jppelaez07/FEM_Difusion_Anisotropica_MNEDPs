@@ -1,0 +1,70 @@
+PRUEBA 3.1 DE PAKMOR ET AL. (2016): DIFUSIÓN ISOTRÓPICA DE UN PERFIL GAUSSIANO
+  kappa = 0.01, t0 = 0.1, t = 0.2, dominio [-0.5, 0.5]^2, u = 1 en la frontera
+  u = 1 + v; v con Dirichlet homogénea; sigma0^2 = 2 kappa t0 = 0.002, n_max = 0.795775, D = kappa I
+  dt = 0.0001 (1000 pasos), Q = 0
+  max |1 + v_exacta - u_artículo| en t0 y en t = 0.2: 4.4e-16
+  max de v exacta en la frontera (t0 a t = 0.2): 1.1e-14  (despreciable)
+  masa exacta de v: 0.01 (constante en el plano infinito)
+
+1. CASO BASE: malla estructurada de 51 x 51 nodos (h = 0.02)
+  theta    error L1   L1 rel.    error L2   L2 rel.  min u t0  min u tf   masa v t0   masa v tf
+    0.5  2.4973e-04  2.50e-02  1.1464e-03  2.57e-02  1.000000  0.999999 1.000000e-02 1.000000e-02
+      1  2.4863e-04  2.49e-02  1.1407e-03  2.56e-02  1.000000  0.999999 1.000000e-02 1.000000e-02
+  Errores relativos respecto a v (la perturbación); como int |u| ~ 1, el error
+  relativo respecto a u es prácticamente igual al absoluto.
+
+2. CONVERGENCIA EN t = 0.2 (tasas entre mallas consecutivas, con h = 1/(N-1))
+  malla            theta    N  h medio   nodos    error L1   L1 rel.  tasa    error L2   L2 rel.  tasa     min u
+  estructurada       0.5   26  0.05657     676  9.3299e-04  9.33e-02     -  4.0874e-03  9.16e-02     -  0.998943
+  estructurada       0.5   51  0.02828    2601  2.4973e-04  2.50e-02  1.90  1.1464e-03  2.57e-02  1.83  0.999999
+  estructurada       0.5  101  0.01414   10201  6.3509e-05  6.35e-03  1.98  2.9567e-04  6.63e-03  1.96  1.000000
+  estructurada       0.5  201  0.00707   40401  1.5948e-05  1.59e-03  1.99  7.4506e-05  1.67e-03  1.99  1.000000
+  estructurada       0.5  401  0.00354  160801  3.9917e-06  3.99e-04  2.00  1.8664e-05  4.18e-04  2.00  1.000000
+
+  estructurada         1   26  0.05657     676  9.3182e-04  9.32e-02     -  4.0820e-03  9.15e-02     -  0.998947
+  estructurada         1   51  0.02828    2601  2.4863e-04  2.49e-02  1.91  1.1407e-03  2.56e-02  1.84  0.999999
+  estructurada         1  101  0.01414   10201  6.2453e-05  6.25e-03  1.99  2.8986e-04  6.50e-03  1.98  1.000000
+  estructurada         1  201  0.00707   40401  1.4936e-05  1.49e-03  2.06  6.8750e-05  1.54e-03  2.08  1.000000
+  estructurada         1  401  0.00354  160801  3.1269e-06  3.13e-04  2.26  1.3289e-05  2.98e-04  2.37  1.000000
+
+  no estructurada    0.5   26  0.04071     789  5.8314e-04  5.83e-02     -  2.7034e-03  6.06e-02     -  0.999993
+  no estructurada    0.5   51  0.02011    3019  1.5038e-04  1.50e-02  1.96  7.1750e-04  1.61e-02  1.91  1.000000
+  no estructurada    0.5  101  0.01003   11827  3.7860e-05  3.79e-03  1.99  1.8213e-04  4.08e-03  1.98  1.000000
+  no estructurada    0.5  201  0.00501   46681  9.4818e-06  9.48e-04  2.00  4.5709e-05  1.02e-03  1.99  1.000000
+  no estructurada    0.5  401  0.00250  185708  2.3715e-06  2.37e-04  2.00  1.1439e-05  2.56e-04  2.00  1.000000
+
+  no estructurada      1   26  0.04071     789  5.8184e-04  5.82e-02     -  2.6975e-03  6.05e-02     -  0.999993
+  no estructurada      1   51  0.02011    3019  1.4907e-04  1.49e-02  1.96  7.1126e-04  1.59e-02  1.92  1.000000
+  no estructurada      1  101  0.01003   11827  3.6564e-05  3.66e-03  2.03  1.7581e-04  3.94e-03  2.02  1.000000
+  no estructurada      1  201  0.00501   46681  8.2246e-06  8.22e-04  2.15  3.9427e-05  8.84e-04  2.16  1.000000
+  no estructurada      1  401  0.00250  185708  1.3878e-06  1.39e-04  2.57  5.6417e-06  1.26e-04  2.80  1.000000
+
+3. RESUMEN
+  estructurada     theta = 0.5: pendiente de log(L1) vs log(N) = -2.00; última tasa L1 = 2.00
+  estructurada     theta = 1: pendiente de log(L1) vs log(N) = -2.08; última tasa L1 = 2.26
+  no estructurada  theta = 0.5: pendiente de log(L1) vs log(N) = -2.01; última tasa L1 = 2.00
+  no estructurada  theta = 1: pendiente de log(L1) vs log(N) = -2.19; última tasa L1 = 2.57
+  Masa de v: variación relativa entre t0 y t = 0.2 entre -9.2e-11 y 4.9e-10.
+  Mínimo de u en t = 0.2: entre 0.99894320 y 1.00000000 (hay valores por debajo de 1).
+  Comparación con el artículo: Pakmor et al. obtienen un error L1 que decrece como N^-2
+  (segundo orden). Aquí la comparación es cualitativa: se compara la pendiente, no los
+  valores, porque el método numérico es distinto.
+  Error temporal de theta = 1: como el de theta = 0.5 es despreciable con este dt,
+  se estima con ||u(theta = 1) - u(theta = 0.5)||_L1 en la misma malla, y se compara con
+  el error espacial (error L1 con theta = 0.5).
+  malla               N  error espacial  error temporal  temporal/espacial
+  estructurada       26      9.3299e-04      1.6354e-06               0.00
+  estructurada       51      2.4973e-04      1.5702e-06               0.01
+  estructurada      101      6.3509e-05      1.5553e-06               0.02
+  estructurada      201      1.5948e-05      1.5511e-06               0.10
+  estructurada      401      3.9917e-06      1.5500e-06               0.39
+  no estructurada    26      5.8314e-04      1.5689e-06               0.00
+  no estructurada    51      1.5038e-04      1.5549e-06               0.01
+  no estructurada   101      3.7860e-05      1.5511e-06               0.04
+  no estructurada   201      9.4818e-06      1.5500e-06               0.16
+  no estructurada   401      2.3715e-06      1.5497e-06               0.65
+  Con theta = 1, en las mallas finas el error temporal O(dt) es del mismo orden que el
+  espacial y lo cancela en parte (el error total queda por debajo del de theta = 0.5).
+  Por eso las tasas mayores que 2 con theta = 1 no son un orden mayor: son el efecto de
+  esa cancelación. El orden espacial limpio (2.00) se ve con theta = 0.5.
+
