@@ -162,6 +162,29 @@ def razon_aspecto_curva(f, nivel, xc, yc, angulo, r_max, n_puntos=2001):
     return r_par / r_perp, r_par, r_perp
 
 
+def matriz_flujo_aristas(nodes, elements, D_func):
+    """Flujo saliente arista por arista de la frontera.
+
+    Retorna (G, puntos_medios): G es dispersa (aristas x Mtot) y (G @ N)[a] es
+    -int_a (D grad n_h) . n_ext sobre la arista a; puntos_medios es (aristas, 2).
+    """
+    from scipy.sparse import csr_matrix
+    _, H, baric = assembly.geometria(nodes, elements)
+    D = D_func(baric[:, 0], baric[:, 1])
+    loc = np.array([[0, 1], [1, 2], [2, 0]])
+    aristas = np.sort(elements[:, loc], axis=2).reshape(-1, 2)
+    _, inv, cuenta = np.unique(aristas, axis=0, return_inverse=True, return_counts=True)
+    frontera = np.flatnonzero(cuenta[inv.ravel()] == 1)
+    e, m = frontera // 3, frontera % 3
+    a, b = nodes[elements[e, m]], nodes[elements[e, (m + 1) % 3]]
+    d = b - a
+    normal = np.column_stack((d[:, 1], -d[:, 0]))          # normal exterior por la longitud
+    w = -np.einsum("ei,eij,ejm->em", normal, D[e], H[e])    # (aristas, 3)
+    filas = np.repeat(np.arange(len(e)), 3)
+    G = csr_matrix((w.ravel(), (filas, elements[e].ravel())), shape=(len(e), len(nodes)))
+    return G, 0.5 * (a + b)
+
+
 def vector_flujo_frontera(nodes, elements, D_func):
     """Vector g tal que g @ N = flujo saliente -int (D grad n_h) . n_ext sobre la frontera."""
     _, H, baric = assembly.geometria(nodes, elements)

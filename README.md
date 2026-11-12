@@ -70,7 +70,7 @@ python scripts/run_all.py --rapido
 
 En este modo no se generan las animaciones, `12_sensibilidad.py` omite las mallas de h = 0.05,
 `06_pakmor.py` y `07_anillo.py` omiten la malla de N = 401, `08_sovinec.py` omite la de
-N = 257 y `10_casos.py` usa T = 100 en lugar de 300. Los resultados son reducidos y se guardan
+N = 257, `13_halo.py` omite la de 801 x 201 y `10_casos.py` usa T = 100 en lugar de 300. Los resultados son reducidos y se guardan
 en `results_rapido/`, de modo que nunca sobrescriben los de `results/`. Los scripts que cambian
 en este modo lo indican al inicio con "MODO RÁPIDO: resultados reducidos, no usar en el informe".
 
@@ -121,6 +121,7 @@ results_rapido/  resultados reducidos del modo rápido (no se versiona)
 | `10_casos.py` | Escenarios 1 a 5: masa, flujo por la frontera, momentos, razón de aspecto, t_99, comparación con la solución exacta de la fuente continua y balance de masa | `casos/<caso>.npz`, `casos/resumen.csv`, `casos/resumen.txt`, `casos/comparacion_exacta.csv` |
 | `11_figuras_casos.py` | Figuras de los escenarios | `casos/estados_finales.*`, `casos/masa_flujo.*`, `casos/balance_caso5.*`, `casos/comparacion_exacta.*` |
 | `12_sensibilidad.py` | A: barrido de D_par/D_perp. B: difusión perpendicular numérica con B uniforme. C: difusión numérica con B circular frente a una referencia radial 1D | `12_barrido_anisotropia.*`, `12_difusion_numerica.*`, `12_campo_curvo.*`, `12_sensibilidad.txt`, `12_campo_curvo.txt` |
+| `13_halo.py` | Escenario físico tipo leaky box en (x, z), basado en Al-Zetoun y Achterberg (2018): halo [-20, 20] x [-1, 1] kpc con escape por z = +-1 (Dirichlet) y paredes reflejantes en x = +-20 (Neumann). Masa, flujo de escape, distribución y media del tiempo de residencia, distancia recorrida a lo largo de B, comparación con las ecuaciones (33)-(35) y con la solución exacta en serie, barrido de D_perp/D_par y campo inclinado. Unidades: L0 = 1 kpc, t0 = L0^2/D_par ~ 10 Myr | `13_halo_mapas.*`, `13_halo_masa.*`, `13_halo_residencia.*`, `13_halo_tiempo_medio.*`, `13_halo_ancho.*` (png, pdf), `13_halo_corridas.csv`, `13_halo_series_base.csv`, `13_halo.txt` |
 | `20_animaciones.py` | Animación de cada caso, comparación 2x2 de los casos 1, 2, 3 y 4b, Crank-Nicolson frente a Euler implícito y anillo con B circular en dos mallas | `animaciones/*.mp4` |
 
 Las figuras se guardan en PNG y PDF.

@@ -5,8 +5,8 @@ Uso:
   python scripts/run_all.py --rapido   prueba en pocos minutos, resultados en results_rapido/
 
 El modo rápido no corre las animaciones, omite las mallas de h = 0.05 en
-12_sensibilidad.py, la de N = 401 en 06_pakmor.py y 07_anillo.py y la de N = 257
-en 08_sovinec.py, y usa T = 100 en 10_casos.py. Sus resultados son reducidos y no deben usarse en el informe.
+12_sensibilidad.py, la de N = 401 en 06_pakmor.py y 07_anillo.py, la de N = 257
+en 08_sovinec.py y la de 801 x 201 en 13_halo.py, y usa T = 100 en 10_casos.py. Sus resultados son reducidos y no deben usarse en el informe.
 La salida de cada script se guarda en <carpeta>/logs/.
 """
 
@@ -31,6 +31,7 @@ SCRIPTS = [
     "10_casos.py",            # escenarios de simulación
     "11_figuras_casos.py",    # figuras de los escenarios (usa 10_casos)
     "12_sensibilidad.py",     # sensibilidad a la anisotropía y difusión numérica
+    "13_halo.py",             # leaky box en (x, z), Al-Zetoun y Achterberg (2018)
     "20_animaciones.py",      # animaciones (usa 10_casos)
 ]
 SIN_MODO_RAPIDO = {"20_animaciones.py"}

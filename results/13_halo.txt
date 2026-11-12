@@ -1,0 +1,92 @@
+ESCENARIO FÍSICO: LEAKY BOX EN EL PLANO (x, z), BASADO EN AL-ZETOUN Y ACHTERBERG (2018)
+UNIDADES
+  L0 = 1 kpc = 3.0857e+21 cm;  D_par = 3.0e+28 cm^2/s;  1 Myr = 3.1560e+13 s
+  t0 = L0^2 / D_par = 3.1738e+14 s = 10.0566 Myr
+  magnitud                    adimensional           físico
+  longitud 1                        1.0000            1 kpc
+  tiempo 1                          1.0000       10.057 Myr
+  dt base                           0.0497          0.5 Myr
+  T                               248.5941         2500 Myr
+  T propuesto                      99.4376         1000 Myr
+  D_par                             1.0000     3e+28 cm^2/s
+  t observado ~1 GeV                9.9438          100 Myr
+  B0 = 1 microG no entra en el modelo: solo importa la dirección de B a través de D.
+
+PROBLEMA
+  Dominio [-20, 20] x [-1, 1] kpc; n0 gaussiana con sigma_x = 0.1, sigma_z = 0.05 kpc; Q = 0, theta = 1
+  Dirichlet n = 0 en z = +-1 (escape) y Neumann en x = +-20 (reflejante).
+  Malla estructurada 401x101: 40501 nodos; 802 nodos con Dirichlet (|z| = 1); de 198 nodos en x = +-20 (sin esquinas), 0 restringidos
+  Malla gmsh h_g = 0.1: 13051 nodos; 802 nodos con Dirichlet (|z| = 1); de 38 nodos en x = +-20 (sin esquinas), 0 restringidos
+  Malla gmsh h_g = 0.04: 63097 nodos; 2002 nodos con Dirichlet (|z| = 1); de 98 nodos en x = +-20 (sin esquinas), 0 restringidos
+  Malla estructurada 801x201: 161001 nodos; 1602 nodos con Dirichlet (|z| = 1); de 398 nodos en x = +-20 (sin esquinas), 0 restringidos
+
+TIEMPO MEDIO DE RESIDENCIA Y DISTANCIA A LO LARGO DEL CAMPO
+  <t> FEM = int_0^T M dt / M(0) + cola exponencial; ec. 34: H^2/(2 D_n); exacta: (H^2 - sigma_z^2)/(2 D_n)
+  corrida        malla                     D_n  dt Myr   <t> FEM    ec. 34    exacta    error  cola % ds ec.35  x esc. sx(<t>)
+  base           estructurada 401x101   0.0100   0.500    501.75    502.83    501.57  3.6e-04   0.224    10.00    8.46    9.28
+  base           gmsh h_g = 0.1         0.0100   0.500    488.18    502.83    501.57 -2.7e-02   0.181    10.00    8.36    9.20
+  base           gmsh h_g = 0.04        0.0100   0.500    501.66    502.83    501.57  1.9e-04   0.224    10.00    8.46    9.29
+  base           estructurada 801x201   0.0100   0.500    501.80    502.83    501.57  4.7e-04   0.224    10.00    8.46    9.28
+  eps = 0.1      estructurada 401x101   0.1000   0.100     50.20     50.28     50.16  8.7e-04   0.000     3.16    3.16    3.16
+  eps = 0.5      estructurada 401x101   0.5000   0.020     10.04     10.06     10.03  8.7e-04   0.000     1.41    1.42    1.42
+  eps = 1        estructurada 401x101   1.0000   0.010      5.02      5.03      5.02  8.7e-04   0.000     1.00    1.01    1.01
+  tan a = 0.1    estructurada 401x101   0.0198   0.500    254.32    253.93    253.29  4.1e-03   0.001     7.11    6.85    5.50
+  tan a = 0.3    estructurada 401x101   0.0917   0.109     54.72     54.81     54.67  8.7e-04   0.000     3.30    3.06    1.70
+  tiempos en Myr y distancias en kpc. x esc. = raíz del promedio de x^2 ponderado por el
+  flujo de escape por z = +-1; sx(<t>) = ancho a lo largo de x en t = <t>.
+
+COMPARACIÓN CON LA SOLUCIÓN EXACTA SEPARABLE (serie de cosenos en z)
+  corrida        malla                  max |M/M0 - exacta|  max |p - p_ex| / max p_ex   M(T)/M0
+  base           estructurada 401x101              4.11e-04                   4.31e-03  2.76e-03
+  base           gmsh h_g = 0.1                    1.74e-02                   3.78e-01  2.24e-03
+  base           gmsh h_g = 0.04                   1.42e-04                   3.16e-03  2.76e-03
+  base           estructurada 801x201              4.29e-04                   4.79e-03  2.76e-03
+  eps = 0.1      estructurada 401x101              8.42e-04                   8.99e-03  4.98e-07
+  eps = 0.5      estructurada 401x101              8.42e-04                   8.99e-03  4.98e-07
+  eps = 1        estructurada 401x101              8.42e-04                   8.99e-03  4.98e-07
+  tan a = 0.1    estructurada 401x101              1.20e-03                   8.87e-03  1.14e-05
+  tan a = 0.3    estructurada 401x101              8.42e-04                   8.99e-03  4.98e-07
+
+CONVERGENCIA DEL CASO BASE ENTRE MALLAS
+  estructurada 401x101  <t> = 501.754 Myr  (exacta 501.571; error +3.65e-04)
+  gmsh h_g = 0.1        <t> = 488.180 Myr  (exacta 501.571; error -2.67e-02)
+  gmsh h_g = 0.04       <t> = 501.664 Myr  (exacta 501.571; error +1.87e-04)
+  estructurada 801x201  <t> = 501.804 Myr  (exacta 501.571; error +4.65e-04)
+  Las dos mallas de gmsh están refinadas alrededor de la fuente (h_fuente = 0.02, r_ref = 0.5).
+  Con h_global = 0.1 la nube, que se estira rápido a lo largo de x pero sigue delgada en z,
+  sale de la zona refinada a elementos que no la resuelven en z (H/h = 10), y el error de p
+  se concentra en las primeras decenas de Myr. Con h_global = 0.04 coincide con las
+  estructuradas: en este problema hay que resolver z en toda la franja, no solo cerca de la fuente.
+  En T = 1000 Myr (malla estructurada 401x101): M/M0 = 1.0928e-01; la integral hasta 1000 Myr da 457.19 Myr de los 501.75 Myr totales.
+
+ESCALAMIENTO CON eps Y CAMPO INCLINADO
+  base           D_n = 0.0100:  <t> D_n = 5.018 Myr  (exacto (H^2 - sigma_z^2) t0 / 2 = 5.016)
+  eps = 0.1      D_n = 0.1000:  <t> D_n = 5.020 Myr  (exacto (H^2 - sigma_z^2) t0 / 2 = 5.016)
+  eps = 0.5      D_n = 0.5000:  <t> D_n = 5.020 Myr  (exacto (H^2 - sigma_z^2) t0 / 2 = 5.016)
+  eps = 1        D_n = 1.0000:  <t> D_n = 5.020 Myr  (exacto (H^2 - sigma_z^2) t0 / 2 = 5.016)
+  tan a = 0.1    D_n = 0.0198:  <t> D_n = 5.036 Myr  (exacto (H^2 - sigma_z^2) t0 / 2 = 5.016)
+  tan a = 0.3    D_n = 0.0917:  <t> D_n = 5.020 Myr  (exacto (H^2 - sigma_z^2) t0 / 2 = 5.016)
+  Con B horizontal D_n = D_perp, así que <t> es exactamente proporcional a 1/eps.
+  tan a = 0.1: D_n = 0.0198 = 1.98 D_perp; <t> = 254.3 Myr frente a 501.8 Myr con B horizontal
+  tan a = 0.3: D_n = 0.0917 = 9.17 D_perp; <t> = 54.7 Myr frente a 501.8 Myr con B horizontal
+
+DISCUSIÓN FÍSICA
+  El tiempo de residencia observado a ~1 GeV es t_res ~ 1e8 años = 100 Myr.
+  Con B horizontal: eps = 0.01 da <t> = 502 Myr (artificialmente largo, como dice el
+  artículo para D_perp pequeño); eps = 0.5 da 10.0 Myr y eps = 1 da 5.0 Myr
+  (demasiado corto con D_par = 3e28 cm^2/s).
+  Para <t> = 100 Myr hace falta D_n = 0.050 D_par: con B horizontal, eps ~ 0.05; con eps = 0.01,
+  basta una inclinación con sin^2 a ~ 0.041 (tan a ~ 0.21).
+  Una componente vertical pequeña de B reduce mucho el tiempo de residencia (ec. 33): con
+    tan a = 0.1: <t> = 254.3 Myr (2.0 veces menor)
+    tan a = 0.3: <t> = 54.7 Myr (9.2 veces menor)
+  Esa es la explicación del artículo de por qué el efecto de eps sobre el tiempo de
+  residencia es menor que 1/eps en su modelo: el campo no es exactamente horizontal.
+  Distancia a lo largo del campo: con eps = 0.01, la ec. 35 da 10.0 kpc; la raíz del promedio de x^2 al escapar es 8.5 kpc
+  y el ancho de la nube en t = <t> es 9.3 kpc (menores por las paredes reflejantes en x = +-20).
+  Fronteras: el artículo deja escapar en r = 20 kpc; aquí x = +-20 es reflejante. Con
+  eps = 0.01 la nube llega a x = +-20 antes de escapar (en t = <t> su ancho es 9.3 kpc;
+  una distribución uniforme en [-20, 20] tendría 11.5 kpc),
+  así que con escape lateral el tiempo de residencia sería más corto que el calculado aquí,
+  que solo cuenta el escape vertical. Con eps grande la nube escapa antes de llegar a x = +-20.
+
