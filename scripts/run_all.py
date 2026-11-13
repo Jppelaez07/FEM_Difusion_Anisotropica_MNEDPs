@@ -34,6 +34,7 @@ SCRIPTS = [
     "12_sensibilidad.py",     # sensibilidad a la anisotropía y difusión numérica
     "13_halo.py",             # leaky box en (x, z), Al-Zetoun y Achterberg (2018)
     "14_snr.py",              # rayos cósmicos de un remanente de supernova, Nava y Gabici (2013)
+    "15_simulaciones.py",     # simulaciones adicionales del remanente (usa 14_snr)
     "20_animaciones.py",      # animaciones (usa 10_casos)
 ]
 SIN_MODO_RAPIDO = {"20_animaciones.py"}

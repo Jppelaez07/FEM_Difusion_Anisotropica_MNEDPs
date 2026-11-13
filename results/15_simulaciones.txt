@@ -1,0 +1,60 @@
+SIMULACIONES ADICIONALES: REMANENTE DE SUPERNOVA (contexto de Nava y Gabici, 2013)
+Se trabaja en pc y kyr; la verificación es contra la gaussiana exacta en el plano infinito.
+
+====================================================================================================
+SIMULACIÓN sim1: Difusión isotrópica intensa, B uniforme
+====================================================================================================
+PARÁMETROS
+  1 pc = 3.0857e+18 cm;  1 kyr = 3.1560e+10 s
+  D_par  = 1e+29 cm^2/s = 331.46 pc^2/kyr
+  D_perp = 1e+29 cm^2/s = 331.46 pc^2/kyr  (D_perp / D_par = 1)
+  B uniforme con ángulo 0 grados respecto al eje x
+  Dominio [-350, 350] x [-350, 350] pc; malla estructurada 281x281 (78961 nodos, h = 2.5 pc)
+  n0 = 1 exp(-(x^2 + y^2) / (2 10^2)) centrada en (0, 0); Q = 0; Dirichlet n = 0
+  theta = 0.5, dt = 0.02 kyr, T = 10 kyr (500 pasos);  D_par dt / h^2 = 1.06
+  B uniforme horizontal; con D isotrópico su dirección no influye.
+  B0 = 3 microG no entra en el modelo: solo importa la dirección de B a través de D.
+  Dominio cuadrado: con difusión isotrópica la nube llega a sigma ~ 82 pc en las dos
+  direcciones en T = 10 kyr; con y = +-150 pc la frontera absorbería una parte importante.
+  Tiempo de cómputo: 22 s
+
+VERIFICACIÓN CONTRA LA GAUSSIANA EXACTA EN EL PLANO INFINITO
+  t (kyr)   L1 rel.   L2 rel. masa/exacta     <x^2>       teo     <y^2>       teo  aspecto       pico     exacto      min n
+        0  8.56e-03  8.51e-03    1.000000    101.04    100.00    101.04    100.00   1.0052 1.0000e+00 1.0000e+00   0.00e+00
+        1  2.96e-03  3.09e-03    1.000000    763.96    762.92    763.96    762.92   1.0007 1.3067e-01 1.3108e-01   0.00e+00
+        2  1.66e-03  1.72e-03    1.000000   1426.88   1425.84   1426.88   1425.84   1.0004 7.0013e-02 7.0134e-02   0.00e+00
+        5  7.13e-04  7.38e-04    1.000000   3415.63   3414.59   3415.63   3414.59   1.0002 2.9264e-02 2.9286e-02   0.00e+00
+       10  4.04e-04  3.82e-04    0.999921   6725.65   6729.18   6725.65   6729.18   1.0001 1.4855e-02 1.4861e-02   0.00e+00
+  masa exacta = 2 pi sigma0^2 n_max = 628.319 pc^2 (constante en el plano infinito); <x^2>, <y^2> en pc^2, teórico sigma0^2 + 2 D t.
+  aspecto = sqrt(l1 / l2) de la matriz de momentos; teórico en t = 10: 1.0000.
+  En t = 0, <x^2> excede al teórico en 1.04 pc^2 (h^2 / 6 = 1.04): es el error de
+  interpolar n0 en P1, y se mantiene mientras la nube no toca la frontera. En t = T la
+  diferencia es -3.53 pc^2: la frontera absorbente recorta la cola.
+
+FRONTERA Y POSITIVIDAD
+  Valor exacto máximo de n en la frontera en t = 10 kyr: 1.66e-06 (pico exacto 1.49e-02, cociente 1.1e-04).
+  Masa perdida hasta t = 10 kyr: 7.86e-05 de la masa inicial.
+  Mínimo de n en toda la corrida: -1.5e-31 en t = 0.02 kyr, del orden del redondeo: no hay valores negativos apreciables.
+
+DENSIDAD EN LAS NUBES DE PRUEBA (A en (50.0, 0.0) pc, B en (0.0, 50.0) pc)
+  t (kyr)         n_A      exacta         n_B      exacta   n_A/n_B
+        0  3.7267e-06  3.7267e-06  3.7267e-06  3.7267e-06    1.0000
+        1  2.5558e-02  2.5466e-02  2.5558e-02  2.5466e-02    1.0000
+        2  2.9210e-02  2.9187e-02  2.9210e-02  2.9187e-02    1.0000
+        5  2.0304e-02  2.0308e-02  2.0304e-02  2.0308e-02    1.0000
+       10  1.2338e-02  1.2341e-02  1.2338e-02  1.2341e-02    1.0000
+
+COMPARACIÓN CON EL CASO ANISOTRÓPICO DE 14_snr.py (eps = 0.01, mismo D_par), t = 10 kyr
+  caso                                     pico         n_A         n_B    n_A/n_B  aspecto
+  sim1 isotrópica, numérica          1.4855e-02  1.2338e-02  1.2338e-02  1.000e+00    1.000
+  sim1 isotrópica, exacta            1.4861e-02  1.2341e-02  1.2341e-02  1.000e+00    1.000
+  14_snr eps = 0.01, numérica        3.1748e-02  2.6350e-02  7.3038e-09  3.608e+06    8.487
+  14_snr eps = 0.01, exacta          3.2076e-02  2.6582e-02  3.6279e-08  7.327e+05    8.538
+  eps = 0.01 exacta, sigma0 = 10     9.4533e-02  7.8507e-02  5.1408e-05  1.527e+03    6.361
+  14_snr.py usa sigma0 = 5 pc, theta = 1 y el dominio [-350, 350] x [-150, 150] pc; la
+  última fila es la exacta anisotrópica con el mismo n0 de esta simulación (sigma0 = 10 pc).
+  Con el mismo D_par, la difusión isotrópica reparte los rayos cósmicos en las dos direcciones:
+  el pico es 6.4 veces menor que con eps = 0.01, la nube A recibe 6.4 veces menos
+  y la nube B 2.4e+02 veces más (exactas, mismo sigma0). n_A/n_B pasa de 1.5e+03 a 1.000
+  y la razón de aspecto de 6.36 a 1.000.
+
