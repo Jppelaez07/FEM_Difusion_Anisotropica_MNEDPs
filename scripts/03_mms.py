@@ -181,14 +181,16 @@ def convergencia_espacial(reportar):
                   f["L2"], tL2[k], tL2m[k], f["H1"], tH1[k], tH1m[k]] for k, f in enumerate(filas)])
 
     fig, ax = plt.subplots(figsize=(6.4, 5.0), constrained_layout=True)
-    ax.loglog(col["h_max"], col["L2"], "o-", color=COLOR[1.0], linewidth=2, markersize=7,
+    # La figura usa h medio (menos sensible a un solo elemento extremo); la tabla y el CSV
+    # conservan las tasas con h máximo y con h medio.
+    ax.loglog(col["h_medio"], col["L2"], "o-", color=COLOR[1.0], linewidth=2, markersize=7,
               label="Error en norma L2")
-    ax.loglog(col["h_max"], col["H1"], "s-", color=COLOR[0.5], linewidth=2, markersize=7,
+    ax.loglog(col["h_medio"], col["H1"], "s-", color=COLOR[0.5], linewidth=2, markersize=7,
               label="Error en seminorma H1")
-    linea_referencia(ax, col["h_max"], col["L2"][-1] * 0.5, 2, "pendiente 2")
-    linea_referencia(ax, col["h_max"], col["H1"][-1] * 0.5, 1, "pendiente 1")
-    marcas_eje_x(ax, col["h_max"], "{:.3f}")
-    ax.set_xlabel("h, diámetro máximo de los elementos (adimensional)")
+    linea_referencia(ax, col["h_medio"], col["L2"][-1] * 0.5, 2, "pendiente 2")
+    linea_referencia(ax, col["h_medio"], col["H1"][-1] * 0.5, 1, "pendiente 1")
+    marcas_eje_x(ax, col["h_medio"], "{:.3f}")
+    ax.set_xlabel("h medio de los elementos (adimensional)")
     ax.set_ylabel("Error (adimensional)")
     ax.set_title(f"Convergencia espacial (t = {T_esp:g})")
     ax.grid(True, which="both", alpha=0.25)
