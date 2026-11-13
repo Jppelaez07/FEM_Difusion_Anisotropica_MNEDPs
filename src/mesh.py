@@ -35,10 +35,23 @@ def malla_uniforme(Lx, Ly, h):
     return _mallar_rectangulo(Lx, Ly, h, None)
 
 
+def malla_caja(Lx, Ly, h_fuera, h_dentro, x0, x1, y0, y1, transicion):
+    """Malla no estructurada de [0, Lx] x [0, Ly] con tamaño h_dentro en la caja
+    [x0, x1] x [y0, y1] y h_fuera lejos de ella; el tamaño crece linealmente en una
+    franja de ancho transicion alrededor de la caja.
+    """
+    if not 0 < h_dentro <= h_fuera:
+        raise ValueError("Se requiere 0 < h_dentro <= h_fuera")
+    if not (0 <= x0 < x1 <= Lx and 0 <= y0 < y1 <= Ly):
+        raise ValueError("La caja debe estar dentro del dominio")
+    return _mallar_rectangulo(Lx, Ly, h_fuera, {"caja": (h_dentro, x0, x1, y0, y1, transicion)})
+
+
 def _mallar_rectangulo(Lx, Ly, h_global, refinamiento):
     """Malla el rectángulo con gmsh.
 
-    refinamiento: None (tamaño uniforme) o (h_source, xs, ys, r_ref, transicion).
+    refinamiento: None (tamaño uniforme), (h_source, xs, ys, r_ref, transicion)
+    o {"caja": (h_dentro, x0, x1, y0, y1, transicion)}.
     """
     if Lx <= 0 or Ly <= 0:
         raise ValueError("Las dimensiones deben ser positivas")
@@ -56,7 +69,7 @@ def _mallar_rectangulo(Lx, Ly, h_global, refinamiento):
         contorno = geo.addCurveLoop(lados)
         superficie = geo.addPlaneSurface([contorno])
 
-        if refinamiento is not None:
+        if isinstance(refinamiento, tuple):
             h_source, xs, ys, r_ref, transicion = refinamiento
             punto_fuente = geo.addPoint(xs, ys, 0.0, h_source)   # referencia del refinamiento
         geo.synchronize()
@@ -68,6 +81,15 @@ def _mallar_rectangulo(Lx, Ly, h_global, refinamiento):
         if refinamiento is None:
             tamano = campo.add("MathEval")
             campo.setString(tamano, "F", repr(float(h_global)))
+        elif isinstance(refinamiento, dict):
+            # Caja con tamaño h_dentro y transición lineal hasta h_global
+            h_dentro, x0, x1, y0, y1, transicion = refinamiento["caja"]
+            tamano = campo.add("Box")
+            campo.setNumber(tamano, "VIn", h_dentro)
+            campo.setNumber(tamano, "VOut", h_global)
+            for clave, valor in (("XMin", x0), ("XMax", x1), ("YMin", y0), ("YMax", y1)):
+                campo.setNumber(tamano, clave, valor)
+            campo.setNumber(tamano, "Thickness", transicion)
         else:
             # Campo de distancia + umbral
             distancia = campo.add("Distance")

@@ -16,7 +16,7 @@ PARÁMETROS
   B0 = 3 microG no entra en el modelo: solo importa la dirección de B a través de D.
   Dominio cuadrado: con difusión isotrópica la nube llega a sigma ~ 82 pc en las dos
   direcciones en T = 10 kyr; con y = +-150 pc la frontera absorbería una parte importante.
-  Tiempo de cómputo: 22 s
+  Tiempo de cómputo: 23 s
 
 VERIFICACIÓN CONTRA LA GAUSSIANA EXACTA EN EL PLANO INFINITO
   t (kyr)   L1 rel.   L2 rel. masa/exacta     <x^2>       teo     <y^2>       teo  aspecto       pico     exacto      min n
@@ -57,4 +57,177 @@ COMPARACIÓN CON EL CASO ANISOTRÓPICO DE 14_snr.py (eps = 0.01, mismo D_par), t
   el pico es 6.4 veces menor que con eps = 0.01, la nube A recibe 6.4 veces menos
   y la nube B 2.4e+02 veces más (exactas, mismo sigma0). n_A/n_B pasa de 1.5e+03 a 1.000
   y la razón de aspecto de 6.36 a 1.000.
+
+====================================================================================================
+SIMULACIÓN sim2: Difusión restringida en un campo curvo
+====================================================================================================
+PARÁMETROS
+  D_par  = 1e+28 cm^2/s = 33.146 pc^2/kyr
+  D_perp = 1e+26 cm^2/s = 0.33146 pc^2/kyr  (eps = D_perp / D_par = 0.01)
+  B = B0 (1, x / 50): líneas y = x^2 / 100 + c, radio de curvatura 50 pc en el vértice
+  Dominio [-350, 350] x [-150, 150] pc; n0 = 1 exp(-(x^2 + y^2) / (2 10^2)); Q = 0; Dirichlet n = 0
+  theta = 0.5, dt = 0.02 kyr, T = 10 kyr (500 pasos)
+  Anchos de referencia en t = 10 kyr (B recto): sigma_par = 27.6 pc, sigma_perp = 10.3 pc
+  B0 = 10 microG no entra en el modelo: solo importa la dirección de B. B no se anula.
+  A = (50, 25) está sobre la parábola que pasa por el origen; A' = (50, 0) sobre y = 0, que ya
+  no es línea de campo; B = (0, 50) en la dirección perpendicular.
+  Corridas:
+    sim2 281x121     34001 nodos, estructurada 281x121, h = 2.5 pc
+                     B = B0 (1, x / 50): líneas y = x^2 / 100 + c, radio de curvatura 50 pc en el vértice; 11 s
+    sim2 561x241     135201 nodos, estructurada 561x241, h = 1.25 pc
+                     B = B0 (1, x / 50): líneas y = x^2 / 100 + c, radio de curvatura 50 pc en el vértice; 53 s
+    sim2 gmsh        55211 nodos, gmsh, h = 1.25 pc en |x| <= 150, |y| <= 100 pc, 5 pc fuera (transición de 20 pc), ángulo mínimo 34.4 grados [referencia]
+                     B = B0 (1, x / 50): líneas y = x^2 / 100 + c, radio de curvatura 50 pc en el vértice; 26 s
+    control 281x121  34001 nodos, estructurada 281x121, h = 2.5 pc
+                     B uniforme horizontal; 12 s
+  Difusión perpendicular numérica esperada por la curvatura (08_sovinec.py): kappa_num ~ 0.5 (h / R)^2 D_par, R = 50 pc
+    h = 2.5 pc: kappa_num ~ 4.14e-02 pc^2/kyr = 0.125 D_perp (en el vértice; R crece lejos de x = 0)
+    h = 1.25 pc: kappa_num ~ 1.04e-02 pc^2/kyr = 0.031 D_perp (en el vértice; R crece lejos de x = 0)
+
+FRONTERA Y POSITIVIDAD
+  sim2 281x121       max |n| junto a la frontera = 2.3e-11 (2.3e-11 del pico inicial); masa perdida 2.3e-12; min n = -1.6e-03
+  sim2 561x241       max |n| junto a la frontera = 1.0e-11 (1.0e-11 del pico inicial); masa perdida 3.6e-12; min n = -7.6e-05
+  sim2 gmsh          max |n| junto a la frontera = 4.8e-11 (4.8e-11 del pico inicial); masa perdida 2.3e-12; min n = -6.4e-10
+  control 281x121    max |n| junto a la frontera = 3.2e-32 (3.2e-32 del pico inicial); masa perdida 3.9e-14; min n = -5.1e-13
+                     valor exacto máximo en la frontera en t = 10 kyr: 4.8e-36
+  sim2 281x121: mínimo -1.56e-03 en t = 10 kyr en (47.5, -12.5) pc (pico en ese instante 0.363).
+  sim2 561x241: mínimo -7.61e-05 en t = 10 kyr en (57.5, -3.75) pc (pico en ese instante 0.367).
+  sim2 gmsh: mínimo -6.36e-10 en t = 10 kyr en (85.9355, 122.161) pc (pico en ese instante 0.368).
+  En las mallas estructuradas los negativos aparecen justo debajo de la nube, cerca de A' (ver la
+  tabla de abajo, x_min y y_min): con anisotropía fuerte y B inclinado respecto a la malla, el
+  esquema P1 no garantiza el principio del máximo discreto. Bajan unas 20 veces al pasar de
+  h = 2.5 a 1.25 pc; en la malla de gmsh (sin dirección preferida) y en el control (B alineado con
+  la malla) son despreciables. Por eso n_A' en la malla de 281x121 no es confiable mientras es
+  comparable a esos negativos (t <= 5 kyr).
+
+MASA, EXTREMOS Y MOMENTOS (x2, y2, xy: momentos centrados en pc^2; aspecto = sqrt(l1 / l2))
+  corrida               t      M/M0      min n      max n  x_pico  y_pico   x_min   y_min     <x>     <y>       x2       y2       xy  aspecto
+  sim2 281x121          0  1.000000   0.00e+00 1.0000e+00    0.00    0.00 -350.00 -150.00   0.000  -0.000   101.04   101.04    -0.52    1.005
+  sim2 281x121          1  1.000000  -1.49e-12 7.7220e-01    0.00    0.00   55.00  -42.50   0.000   0.574   159.07   104.56    -0.52    1.234
+  sim2 281x121          2  1.000000  -1.33e-05 6.5334e-01    0.00    0.00   45.00  -15.00   0.000   1.119   214.28   108.91    -0.52    1.403
+  sim2 281x121          5  1.000000  -5.23e-04 4.8147e-01    0.00    0.00   45.00  -12.50   0.000   2.625   366.86   125.72    -0.51    1.708
+  sim2 281x121         10  1.000000  -1.56e-03 3.6311e-01    0.00    0.00   47.50  -12.50  -0.000   4.829   590.60   162.36    -0.48    1.907
+  sim2 561x241          0  1.000000   0.00e+00 1.0000e+00    0.00    0.00 -350.00 -150.00   0.000   0.000   100.26   100.26    -0.13    1.001
+  sim2 561x241          1  1.000000  -2.70e-35 7.7458e-01    0.00    0.00   73.75  -93.75   0.000   0.574   158.32   103.77    -0.13    1.235
+  sim2 561x241          2  1.000000  -1.84e-23 6.5591e-01    0.00    0.00   66.25  -63.75   0.000   1.120   213.55   108.10    -0.13    1.405
+  sim2 561x241          5  1.000000  -2.36e-06 4.8474e-01    0.00   -1.25   53.75  -12.50   0.000   2.626   366.20   124.90    -0.13    1.712
+  sim2 561x241         10  1.000000  -7.61e-05 3.6705e-01    0.00   -1.25   57.50   -3.75  -0.000   4.831   590.02   161.52    -0.12    1.911
+  sim2 gmsh             0  1.000000   0.00e+00 9.9875e-01   -0.31    0.40 -350.00 -150.00   0.000   0.000   100.20   100.20     0.00    1.000
+  sim2 gmsh             1  1.000000  -6.20e-20 7.7454e-01    0.63   -0.44   -9.26  -94.66   0.000   0.574   158.25   103.70    -0.00    1.235
+  sim2 gmsh             2  1.000000  -1.72e-15 6.5657e-01    0.63   -0.44   73.81  -30.22   0.000   1.120   213.49   108.04    -0.00    1.406
+  sim2 gmsh             5  1.000000  -2.71e-12 4.8535e-01   -0.56   -0.83   75.63   -9.65   0.000   2.626   366.14   124.83    -0.00    1.713
+  sim2 gmsh            10  1.000000  -6.36e-10 3.6755e-01   -0.56   -0.83   85.94  122.16   0.000   4.831   589.96   161.45    -0.01    1.912
+  control 281x121       0  1.000000   0.00e+00 1.0000e+00    0.00    0.00 -350.00 -150.00   0.000  -0.000   101.04   101.04    -0.52    1.005
+  control 281x121       1  1.000000  -7.24e-24 7.6981e-01    0.00    0.00 -115.00   20.00  -0.000   0.000   167.33   101.70    -0.52    1.283
+  control 281x121       2  1.000000  -5.00e-16 6.4818e-01    0.00    0.00  110.00  -15.00   0.000   0.000   233.63   102.37    -0.52    1.511
+  control 281x121       5  1.000000  -4.21e-13 4.7104e-01    0.00    0.00 -122.50   30.00   0.000   0.000   432.50   104.36    -0.52    2.036
+  control 281x121      10  1.000000  -3.63e-13 3.4865e-01    0.00    0.00 -160.00   32.50  -0.000   0.000   763.96   107.67    -0.52    2.664
+
+VERIFICACIÓN DEL CONTROL (control 281x121) CONTRA LA GAUSSIANA ANISOTRÓPICA EXACTA
+     t   L1 rel.   L2 rel.       x2      teo       y2      teo  aspecto      teo       pico     exacto
+     0  8.56e-03  8.51e-03   101.04   100.00  101.042  100.000    1.005    1.000 1.0000e+00 1.0000e+00
+     1  8.96e-03  9.16e-03   167.33   166.29  101.705  100.663    1.283    1.285 7.6981e-01 7.7291e-01
+     2  8.93e-03  9.05e-03   233.63   232.58  102.368  101.326    1.511    1.515 6.4818e-01 6.5140e-01
+     5  8.56e-03  8.55e-03   432.50   431.46  104.356  103.315    2.036    2.044 4.7104e-01 4.7364e-01
+    10  8.13e-03  8.11e-03   763.96   762.92  107.671  106.629    2.664    2.675 3.4865e-01 3.5061e-01
+
+CENTRO DE MASA: ASCENSO A LO LARGO DE LAS PARÁBOLAS
+  Predicción aproximada: las partículas se mueven sobre y = x^2 / 100 + c, así que
+  D<y> ~ D<x^2> / 100. Con D<x^2> ~ 2 D_par t (B recto) da D<y> ~ D_par t / 50; esa es
+  una aproximación: la difusión es por longitud de arco y no en x, así que <x^2> crece
+  menos que 2 D_par t. Usando el D<x^2> medido, la relación es además exacta salvo un
+  término pequeño: con c = y - x^2 / 100 (constante sobre cada línea), grad c es
+  perpendicular a b, D grad c = D_perp grad c, y d<c>/dt = D_perp lap c = -D_perp / 50. Así
+  D<y> = D<x^2> / 100 - D_perp t / 50 (columna 'identidad'), si la frontera no pierde masa.
+  corrida               t    D<x^2>  2 D_par t  D<y> medido   aprox.  con D<x^2>  identidad
+  sim2 281x121          0      0.00       0.00       0.0000   0.0000      0.0000     0.0000
+  sim2 281x121          1     58.03      66.29       0.5736   0.6629      0.5803     0.5737
+  sim2 281x121          2    113.24     132.58       1.1190   1.3258      1.1324     1.1192
+  sim2 281x121          5    265.82     331.46       2.6248   3.3146      2.6582     2.6251
+  sim2 281x121         10    489.56     662.92       4.8288   6.6292      4.8956     4.8293
+  sim2 561x241          0      0.00       0.00       0.0000   0.0000      0.0000     0.0000
+  sim2 561x241          1     58.06      66.29       0.5739   0.6629      0.5806     0.5739
+  sim2 561x241          2    113.29     132.58       1.1196   1.3258      1.1329     1.1196
+  sim2 561x241          5    265.94     331.46       2.6261   3.3146      2.6594     2.6262
+  sim2 561x241         10    489.76     662.92       4.8311   6.6292      4.8976     4.8313
+  sim2 gmsh             0      0.00       0.00       0.0000   0.0000      0.0000     0.0000
+  sim2 gmsh             1     58.06      66.29       0.5739   0.6629      0.5806     0.5739
+  sim2 gmsh             2    113.29     132.58       1.1197   1.3258      1.1329     1.1197
+  sim2 gmsh             5    265.94     331.46       2.6263   3.3146      2.6594     2.6263
+  sim2 gmsh            10    489.77     662.92       4.8314   6.6292      4.8977     4.8314
+  D<.> = valor en t menos valor en t = 0; distancias en pc. En el control (B horizontal) <y> = 0.
+
+DIFUSIÓN PERPENDICULAR EFECTIVA
+  Con c constante sobre las líneas de campo, d/dt int n c^2 = D_perp int n (2 |grad c|^2 + 2 c lap c)
+  (sin pérdidas por la frontera). D_perp,ef / D_perp = cambio medido de int n c^2 / (D_perp por la
+  integral en el tiempo del lado derecho); vale 1 sin difusión numérica, y el exceso mide kappa_num / D_perp.
+  corrida            c                     t = 1      t = 2      t = 5     t = 10  var c (t = T)
+  sim2 281x121       c = y - x^2 / 100     0.9424     0.9451     0.9515     0.9588        110.348
+  sim2 561x241       c = y - x^2 / 100     0.9856     0.9863     0.9879     0.9897        109.773
+  sim2 gmsh          c = y - x^2 / 100     0.9931     0.9933     0.9940     0.9947        109.744
+  control 281x121    c = y                1.0000     1.0000     1.0000     1.0000        107.671
+  var c en pc^2; sin difusión numérica, en el control var c = sigma0^2 + 2 D_perp t = 106.629.
+  En t = 10: la desviación respecto a 1 pasa de -0.0412 (h = 2.5) a -0.0103 (h = 1.25), orden 2.00;
+  la extrapolación de Richardson con orden 2 (mallas estructuradas) da 1.0000.
+
+DENSIDAD EN LOS PUNTOS DE PRUEBA: A = (50.0, 25.0);  A' = (50.0, 0.0);  B = (0.0, 50.0)
+  corrida               t         n_A        n_A'         n_B    n_A/n_A'
+  sim2 281x121          0  1.6374e-07  3.7267e-06  3.7267e-06   4.394e-02
+  sim2 281x121          1  4.8980e-05  3.7307e-05  2.6743e-06   1.313e+00
+  sim2 281x121          2  6.7705e-04  9.3988e-05  2.2407e-06   7.204e+00
+  sim2 281x121          5  1.2430e-02  5.1572e-04  1.6222e-06   2.410e+01
+  sim2 281x121         10  4.5782e-02  3.6457e-03  1.6141e-06   1.256e+01
+  sim2 561x241          0  1.6374e-07  3.7267e-06  3.7267e-06   4.394e-02
+  sim2 561x241          1  5.0594e-05  5.1029e-05  2.6682e-06   9.915e-01
+  sim2 561x241          2  6.6992e-04  1.9494e-04  2.2991e-06   3.437e+00
+  sim2 561x241          5  1.2388e-02  1.2526e-03  1.9340e-06   9.890e+00
+  sim2 561x241         10  4.7288e-02  4.1085e-03  1.8209e-06   1.151e+01
+  sim2 gmsh             0  1.6800e-07  3.8720e-06  3.8782e-06   4.339e-02
+  sim2 gmsh             1  5.0678e-05  5.5342e-05  2.6931e-06   9.157e-01
+  sim2 gmsh             2  6.6771e-04  2.2013e-04  2.2724e-06   3.033e+00
+  sim2 gmsh             5  1.2407e-02  1.4525e-03  1.8603e-06   8.542e+00
+  sim2 gmsh            10  4.7968e-02  4.4854e-03  1.8214e-06   1.069e+01
+  control 281x121       0  1.6374e-07  3.7267e-06  3.7267e-06   4.394e-02
+  control 281x121       1  1.7864e-05  3.9526e-04  3.2456e-06   4.519e-02
+  control 281x121       2  1.2950e-04  3.0018e-03  3.0047e-06   4.314e-02
+  control 281x121       5  1.1891e-03  2.6612e-02  2.7770e-06   4.469e-02
+  control 281x121      10  3.4805e-03  6.8868e-02  2.9377e-06   5.054e-02
+    exacta control     10  3.6346e-03  6.8117e-02  2.8421e-06   5.336e-02
+
+SIMETRÍA x -> -x EN t = 10 kyr (el problema la tiene; la malla estructurada no)
+  corrida                   punto     n(x, y)    n(-x, y)  cociente
+  sim2 281x121       A (50.0, 25.0)  4.5782e-02  4.8005e-02    0.9537
+  sim2 281x121       A' (50.0, 0.0)  3.6457e-03  4.5128e-03    0.8079
+  sim2 561x241       A (50.0, 25.0)  4.7288e-02  4.7971e-02    0.9858
+  sim2 561x241       A' (50.0, 0.0)  4.1085e-03  4.5569e-03    0.9016
+  sim2 gmsh          A (50.0, 25.0)  4.7968e-02  4.7917e-02    1.0011
+  sim2 gmsh          A' (50.0, 0.0)  4.4854e-03  4.5837e-03    0.9786
+  control 281x121    A (50.0, 25.0)  3.4805e-03  3.4525e-03    1.0081
+  control 281x121    A' (50.0, 0.0)  6.8868e-02  6.8868e-02    1.0000
+  En las mallas estructuradas, a un lado de x = 0 B corta las diagonales y al otro las sigue: en el
+  campo curvo el lado x > 0 muestra una franja espuria con n ~ 1e-4 debajo de la nube y los
+  negativos de arriba. A' está en ese lado, así que su densidad en esas mallas tiene ese error,
+  que se reduce al refinar. La malla de gmsh no tiene una dirección preferida.
+
+COMPARACIÓN ENTRE MALLAS EN t = 10 kyr (referencia: sim2 gmsh; dif. rel. = (malla - ref) / ref)
+  métrica                sim2 281x121   sim2 561x241      sim2 gmsh  dif. 281x121  dif. 561x241
+  M/M0                   1.000000e+00   1.000000e+00   1.000000e+00      5.55e-16     -1.34e-12
+  min n (hasta T)       -1.558727e-03  -7.605746e-05  -6.358960e-10                            
+  max n                  3.631123e-01   3.670545e-01   3.675542e-01     -1.21e-02     -1.36e-03
+  <y> (pc)               4.828768e+00   4.831131e+00   4.831350e+00     -5.35e-04     -4.54e-05
+  x2 (pc^2)              5.905991e+02   5.900156e+02   5.899628e+02      1.08e-03      8.95e-05
+  y2 (pc^2)              1.623634e+02   1.615220e+02   1.614495e+02      5.66e-03      4.49e-04
+  var c (pc^2)           1.103479e+02   1.097729e+02   1.097442e+02      5.50e-03      2.62e-04
+  D_perp,ef / D_perp     9.587852e-01   9.896856e-01   9.947306e-01     -3.61e-02     -5.07e-03
+  D<y> (pc)              4.828768e+00   4.831131e+00   4.831350e+00     -5.35e-04     -4.54e-05
+  identidad (pc)         4.829282e+00   4.831260e+00   4.831383e+00     -4.35e-04     -2.54e-05
+  n_A                    4.578229e-02   4.728758e-02   4.796774e-02     -4.56e-02     -1.42e-02
+  n_A'                   3.645740e-03   4.108548e-03   4.485433e-03     -1.87e-01     -8.40e-02
+  n_B                    1.614091e-06   1.820948e-06   1.821419e-06     -1.14e-01     -2.58e-04
+
+RESUMEN
+  En sim2 gmsh, n_A / n_A' = 1.07e+01 en t = 10 kyr: los rayos
+  cósmicos siguen la parábola que pasa por la fuente y no la recta y = 0.
+  En el control (B recto), n_A / n_A' = 5.05e-02: al revés, A' está sobre la línea de campo de la fuente.
+  El centro de masa sube 4.83 pc (aproximación con 2 D_par t: 6.63 pc; con el <x^2> medido: 4.83 pc).
 
